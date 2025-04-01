@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-1-uo!bsknus0sqp+zxcfo7)%j*bnv7bn*&@wkks$9**uck2k29
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['crene.com', 'www.crene.com', 'your_public_ip', 'localhost', '127.0.0.1']
 
 
 # Application definition

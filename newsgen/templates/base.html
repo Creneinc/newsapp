@@ -28,11 +28,6 @@
             <!-- Left Section: Crene -->
             <a href="/" class="text-2xl font-bold text-emerald-600 hover:text-emerald-700 transition duration-300">Crene</a>
 
-            <!-- Center Section: AI-powered News Platform -->
-            <div class="flex-1 text-center">
-                <span class="text-2xl font-bold text-emerald-600">AI-powered News Platform</span>
-            </div>
-
             <!-- Right Section: Authentication & Navigation -->
             <div class="space-x-6 hidden md:block">
                 <a href="/" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Home</a>
@@ -57,9 +52,9 @@
 
         </div>
     </nav>
-    
+
     <!-- 🔥 Category Navigation Bar (Top of Base Layout) -->
-    <div class="bg-gray-100 py-3 shadow-sm">
+    <div class="bg-gray-100 py-3 shadow-sm hidden md:block">
         <div class="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 justify-center">
             <a href="{% url 'article_list' %}?category=All" class="px-5 py-2 text-sm font-semibold rounded-md
                 {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
@@ -74,21 +69,28 @@
         </div>
     </div>
 
-            <!-- Mobile Category Dropdown -->
-            <div id="mobile-menu" class="hidden md:hidden w-full px-6 space-y-4">
-                <a href="{% url 'article_list' %}?category=All" class="block px-5 py-2 text-sm font-semibold rounded-md
-                    {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-                    All Articles
-                </a>
-                {% for key, value in categories.items %}
-                    <a href="{% url 'article_list' %}?category={{ key }}" class="block px-5 py-2 text-sm font-semibold rounded-md
-                        {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-                        {{ value }}
-                    </a>
-                {% endfor %}
-            </div>
-
-        </div>
+    <!-- Mobile Category Dropdown (now includes login and generate buttons) -->
+    <div id="mobile-menu" class="hidden md:hidden w-full px-6 space-y-4">
+        <a href="{% url 'article_list' %}?category=All" class="block px-5 py-2 text-sm font-semibold rounded-md
+            {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+            All Articles
+        </a>
+        {% for key, value in categories.items %}
+            <a href="{% url 'article_list' %}?category={{ key }}" class="block px-5 py-2 text-sm font-semibold rounded-md
+                {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                {{ value }}
+            </a>
+        {% endfor %}
+        {% if not user.is_authenticated %}
+        <a href="{% url 'login' %}" class="block text-sm font-medium text-emerald-600 hover:underline">Login</a>
+        <a href="{% url 'signup' %}" class="block text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
+        {% else %}
+        <form method="post" action="{% url 'logout' %}" class="inline-block">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-medium text-red-500 hover:underline bg-transparent border-0 p-0">Logout</button>
+        </form>
+        <a href="{% url 'new_article' %}" class="block text-sm font-medium text-emerald-600 hover:underline">Generate</a>
+        {% endif %}
     </div>
 
     <!-- ✅ Main Content Area -->
