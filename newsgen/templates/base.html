@@ -24,6 +24,7 @@
     <!-- ✅ Navbar -->
     <nav class="bg-white shadow-md px-6 py-3 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
+
             <!-- Left Section: Crene -->
             <a href="/" class="text-2xl font-bold text-emerald-600 hover:text-emerald-700 transition duration-300">Crene</a>
 
@@ -33,7 +34,7 @@
             </div>
 
             <!-- Right Section: Authentication & Navigation -->
-            <div class="space-x-6">
+            <div class="space-x-6 hidden md:block">
                 <a href="/" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Home</a>
                 <a href="{% url 'new_article' %}" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Generate</a>
                 {% if user.is_authenticated %}
@@ -46,9 +47,17 @@
                     <a href="{% url 'signup' %}" class="text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
                 {% endif %}
             </div>
+
+            <!-- Hamburger Icon (for mobile) -->
+            <div class="md:hidden flex items-center">
+                <button id="menu-toggle" class="text-2xl text-emerald-600 focus:outline-none">
+                    &#9776;
+                </button>
+            </div>
+
         </div>
     </nav>
-
+    
     <!-- 🔥 Category Navigation Bar (Top of Base Layout) -->
     <div class="bg-gray-100 py-3 shadow-sm">
         <div class="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 justify-center">
@@ -65,6 +74,23 @@
         </div>
     </div>
 
+            <!-- Mobile Category Dropdown -->
+            <div id="mobile-menu" class="hidden md:hidden w-full px-6 space-y-4">
+                <a href="{% url 'article_list' %}?category=All" class="block px-5 py-2 text-sm font-semibold rounded-md
+                    {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                    All Articles
+                </a>
+                {% for key, value in categories.items %}
+                    <a href="{% url 'article_list' %}?category={{ key }}" class="block px-5 py-2 text-sm font-semibold rounded-md
+                        {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                        {{ value }}
+                    </a>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
     <!-- ✅ Main Content Area -->
     <main class="max-w-10xl mx-auto px-0 py-0">
         {% block content %}{% endblock %}
@@ -78,6 +104,14 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.js"></script>
+
+    <script>
+        // Toggle mobile menu visibility
+        document.getElementById("menu-toggle").addEventListener("click", function () {
+            var menu = document.getElementById("mobile-menu");
+            menu.classList.toggle("hidden");
+        });
+    </script>
 </body>
 
 </html>

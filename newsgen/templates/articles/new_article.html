@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load widget_tweaks %}
 
 {% block title %}New Article{% endblock %}
 
@@ -28,7 +27,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select name="category" class="w-full border rounded p-2">
-                {% for key, value in form.fields.category.choices %}
+                {% for key, value in categories.items %}
                     <option value="{{ key }}" {% if form.instance.category == key %}selected{% endif %}>
                         {{ value }}
                     </option>
@@ -42,7 +41,7 @@
             {{ form.image|add_class:"w-full border rounded p-2" }}
         </div>
 
-        <!-- ✅ Hidden AI-Generated Body Field -->
+        <!-- Hidden AI-Generated Body Field -->
         <div style="display:none;">
             {{ form.body }}
         </div>

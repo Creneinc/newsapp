@@ -36,20 +36,17 @@ def generate_article(title, summary, category):
 def article_list(request):
     category = request.GET.get('category', 'All')  # Default to 'All' if no category is selected
 
+    # Filter the articles based on category selection
     if category == 'All':
-        # Show all articles when "All Articles" is selected
-        articles = Article.objects.order_by('-created_at')
-    elif category == "General":
-        # Show only "General" category articles
-        articles = Article.objects.filter(category="General").order_by('-created_at')
+        articles = Article.objects.all().order_by('-created_at')
     else:
-        # Show articles of the selected category
         articles = Article.objects.filter(category=category).order_by('-created_at')
 
+    # Pass 'categories' consistently to all templates
     return render(request, 'articles/article_list.html', {
         'articles': articles,
-        'categories': CATEGORIES,  # Pass the consistent categories here
-        'selected_category': category,  # Pass selected category for active state in navigation
+        'categories': CATEGORIES,  # Ensure categories are passed here
+        'selected_category': category,  # Pass the selected category for highlighting
     })
 
 ### 🔎 View Single Article ###
@@ -90,7 +87,11 @@ def signup_view(request):
             return redirect('article_list')
     else:
         form = UserCreationForm()
-    return render(request, 'registration/signup.html', {'form': form})
+
+    return render(request, 'registration/signup.html', {
+        'form': form,
+        'categories': CATEGORIES  # Add this line
+    })
 
 @login_required
 def new_article(request):
