@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-96x96.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'android-chrome-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'android-chrome-512x512.png' %}">
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Crene - AI-Powered News{% endblock %}</title>
+
+    <!-- Tailwind & Flowbite -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans">
+
+    <!-- ✅ Navbar -->
+    <nav class="bg-white shadow-md px-6 py-3 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Left Section: Crene -->
+            <a href="/" class="text-2xl font-bold text-emerald-600 hover:text-emerald-700 transition duration-300">Crene</a>
+
+            <!-- Center Section: AI-powered News Platform -->
+            <div class="flex-1 text-center">
+                <span class="text-2xl font-bold text-emerald-600">AI-powered News Platform</span>
+            </div>
+
+            <!-- Right Section: Authentication & Navigation -->
+            <div class="space-x-6">
+                <a href="/" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Home</a>
+                <a href="{% url 'new_article' %}" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Generate</a>
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-sm font-medium text-red-500 hover:underline bg-transparent border-0 p-0">Logout</button>
+                </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="text-sm font-medium text-emerald-600 hover:underline">Login</a>
+                    <a href="{% url 'signup' %}" class="text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- 🔥 Category Navigation Bar (Top of Base Layout) -->
+    <div class="bg-gray-100 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 justify-center">
+            <a href="{% url 'article_list' %}?category=All" class="px-5 py-2 text-sm font-semibold rounded-md
+                {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                All Articles
+            </a>
+            {% for key, value in categories.items %}
+                <a href="{% url 'article_list' %}?category={{ key }}" class="px-5 py-2 text-sm font-semibold rounded-md
+                        {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                    {{ value }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ✅ Main Content Area -->
+    <main class="max-w-10xl mx-auto px-0 py-0">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ✅ Footer -->
+    <footer class="bg-white shadow-md py-4">
+        <div class="max-w-7xl mx-auto px-6 text-center text-sm text-gray-600">
+            <p>&copy; 2025 Crene News. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}New Article{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-md">
+
+    <!-- 📰 New Article Form -->
+    <h2 class="text-2xl font-bold text-emerald-700 mb-6">📰 Generate AI-Powered News</h2>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+
+        <!-- Title -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            {{ form.title|add_class:"w-full border rounded p-2" }}
+        </div>
+
+        <!-- Summary -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Summary (optional)</label>
+            {{ form.summary|add_class:"w-full border rounded p-2 h-24" }}
+        </div>
+
+        <!-- Category -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select name="category" class="w-full border rounded p-2">
+                {% for key, value in form.fields.category.choices %}
+                    <option value="{{ key }}" {% if form.instance.category == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Image Upload -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (optional)</label>
+            {{ form.image|add_class:"w-full border rounded p-2" }}
+        </div>
+
+        <!-- ✅ Hidden AI-Generated Body Field -->
+        <div style="display:none;">
+            {{ form.body }}
+        </div>
+
+        <!-- Button -->
+        <button type="submit" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition">
+            ✨ Generate Article
+        </button>
+    </form>
+
+</div>
+{% endblock %}
