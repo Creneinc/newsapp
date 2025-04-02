@@ -54,7 +54,7 @@
         </div>
     </nav>
 
-    <!-- 🔥 Category Navigation Bar (Top of Base Layout) -->
+    <!-- 🔥 Category Navigation Bar -->
     <div class="bg-gray-100 py-3 shadow-sm hidden md:block">
         <div class="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 justify-center">
             <a href="{% url 'article_list' %}?category=All" class="px-5 py-2 text-sm font-semibold rounded-md
@@ -63,14 +63,14 @@
             </a>
             {% for key, value in categories.items %}
                 <a href="{% url 'article_list' %}?category={{ key }}" class="px-5 py-2 text-sm font-semibold rounded-md
-                        {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
+                    {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
                     {{ value }}
                 </a>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Mobile Category Dropdown (includes login, generate, euphorie buttons) -->
+    <!-- ✅ Mobile Dropdown -->
     <div id="mobile-menu" class="hidden md:hidden w-full px-6 space-y-4 py-4 bg-white shadow-md">
         <a href="{% url 'article_list' %}?category=All" class="block px-5 py-2 text-sm font-semibold rounded-md
             {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
@@ -83,19 +83,23 @@
             </a>
         {% endfor %}
 
-        <a href="https://euphorie.com" target="_blank" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-600 text-white hover:bg-purple-700 transition duration-300">
+        <!-- Euphorie -->
+        <a href="https://euphorie.com" target="_blank" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white transition duration-300">
             Euphorie
         </a>
 
+        <!-- Generate (always visible) -->
+        <a href="{% url 'new_article' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition duration-300">
+            Generate
+        </a>
+
         {% if not user.is_authenticated %}
-            <a href="{% url 'login' %}" class="block text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 py-2 px-4 rounded-md transition duration-300">Login</a>
-            <a href="{% url 'signup' %}" class="block text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 py-2 px-4 rounded-md transition duration-300">Sign Up</a>
+            <a href="{% url 'login' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition duration-300">Login</a>
+            <a href="{% url 'signup' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition duration-300">Sign Up</a>
         {% else %}
-            <!-- Generate above Logout -->
-            <a href="{% url 'new_article' %}" class="block text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 py-2 px-4 rounded-md transition duration-300">Generate</a>
             <form method="post" action="{% url 'logout' %}" class="block">
                 {% csrf_token %}
-                <button type="submit" class="w-full text-left text-sm font-medium text-white bg-red-500 hover:bg-red-600 py-2 px-4 rounded-md transition duration-300">Logout</button>
+                <button type="submit" class="w-full text-left px-5 py-2 text-sm font-semibold rounded-md bg-red-500 text-white hover:bg-red-600 transition duration-300">Logout</button>
             </form>
         {% endif %}
     </div>
@@ -115,7 +119,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.js"></script>
 
     <script>
-        // Toggle mobile menu visibility
         document.getElementById("menu-toggle").addEventListener("click", function () {
             var menu = document.getElementById("mobile-menu");
             menu.classList.toggle("hidden");
