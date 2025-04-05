@@ -3,37 +3,45 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environment
+# C extensions
+*.so
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# Media and static files
+/media/
+/staticfiles/
+/static/
+
+# Environment variables
+.env
+.env.*
+
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
+*.egg-info/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# Pip files
+pip-log.txt
+pip-delete-this-directory.txt
 
-# VS Code settings
+# VS Code
 .vscode/
 
-# OS files
+# Mac & Windows system files
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Environment variables and secrets
-.env
-
-# Data and model files (optional – depending on your project)
-*.csv
-*.tsv
-*.json
-*.pkl
-*.h5
-*.pt
-*.onnx
-*.joblib
-
-# Git-specific
-*.swp
+# Migrations (optional – keep if you want to version control them)
+# **Uncomment below if you DON’T want to track migrations**
+# */migrations/
+# !*/migrations/__init__.py
