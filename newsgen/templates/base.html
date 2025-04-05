@@ -41,8 +41,9 @@
                     <a href="{% url 'login' %}" class="text-sm font-medium text-emerald-600 hover:underline">Login</a>
                     <a href="{% url 'signup' %}" class="text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
                 {% endif %}
-                <a href="https://euphorie.com" target="_blank" class="text-sm font-medium text-yellow-500 hover:underline">Euphorie</a>
-            </div>
+                <a href="https://euphorie.com" target="_blank" class="text-sm font-medium text-yellow-500 hover:underline">Chat</a>
+                <a href="https://diaryvault.com" target="_blank" class="text-sm font-medium text-yellow-600 hover:underline">Diary</a>
+	       </div>
 
             <!-- Hamburger Icon (for mobile) -->
             <div class="md:hidden flex items-center">
@@ -84,9 +85,14 @@
         {% endfor %}
 
         <!-- Euphorie -->
-        <a href="https://euphorie.com" target="_blank" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white transition duration-300">
-            Euphorie
+        <a href="https://euphorie.com" target="_blank" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-300 text-white transition duration-300">
+        Chat
         </a>
+
+        <!-- DiaryVault -->
+        <a href="http://diaryvault.com" target="_blank"  class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-400 text-white transition duration-300">        
+        Diary
+	</a>
 
         <!-- Generate (always visible) -->
         <a href="{% url 'new_article' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition duration-300">
