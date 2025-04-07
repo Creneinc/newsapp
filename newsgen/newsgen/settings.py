@@ -123,7 +123,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR.parent / 'static']  # ✅ must point to your /static folder
+STATICFILES_DIRS = [BASE_DIR / "static"]  # ✅ must point to your /static folder
 STATIC_ROOT = BASE_DIR / 'staticfiles'    # ✅ for collectstatic to work
 
 # Default primary key field type

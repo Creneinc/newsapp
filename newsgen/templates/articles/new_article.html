@@ -1,15 +1,23 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
-{% block title %}New Article{% endblock %}
+{% block title %}Create with AI{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-md">
+<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-md space-y-6">
 
-    <!-- 📰 New Article Form -->
-    <h2 class="text-2xl font-bold text-emerald-700 mb-6">📰 Generate AI-Powered News</h2>
+    <!-- 🔘 Content Type Selector -->
+    <div>
+        <h2 class="text-2xl font-bold text-emerald-700 mb-2">🧠 Create with AI</h2>
+        <p class="text-gray-600 text-sm mb-4">Choose what you'd like to create and fill in the relevant info below.</p>
+        <select id="content-type" name="content-type" class="w-full border rounded p-2">
+            <option value="article">📰 Generate News Article</option>
+            <option value="image">🖼️ Upload AI Image</option>
+            <option value="video">🎞️ Upload AI Video</option>
+        </select>
+    </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-5">
+    <form method="post" enctype="multipart/form-data" class="space-y-6" id="ai-form">
         {% csrf_token %}
 
         <!-- Title -->
@@ -18,14 +26,17 @@
             {{ form.title|add_class:"w-full border rounded p-2" }}
         </div>
 
-        <!-- Summary -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Summary (optional)</label>
-            {{ form.summary|add_class:"w-full border rounded p-2 h-24" }}
+        <!-- Summary / Prompt Input -->
+        <div id="summary-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1" id="summary-label">Draft Summary</label>
+            {{ form.summary|add_class:"w-full border rounded p-2 h-28" }}
+            <p class="text-xs text-gray-500 mt-1" id="summary-hint">
+                Add your rough draft or notes — our AI will turn it into a polished article.
+            </p>
         </div>
 
-        <!-- Category -->
-        <div>
+        <!-- Category Selector -->
+        <div id="category-group">
             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select name="category" class="w-full border rounded p-2">
                 {% for key, value in categories.items %}
@@ -36,22 +47,106 @@
             </select>
         </div>
 
-        <!-- Image Upload -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (optional)</label>
-            {{ form.image|add_class:"w-full border rounded p-2" }}
+        <!-- Description for AI Image/Video -->
+        <div id="description-group" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description" id="description" class="w-full border rounded p-2 h-28"></textarea>
+            <p class="text-xs text-gray-500 mt-1">
+                Add a description for your uploaded content. This will appear in the gallery or video section.
+            </p>
         </div>
 
-        <!-- Hidden AI-Generated Body Field -->
-        <div style="display:none;">
+        <!-- Image/Video Upload -->
+        <div id="media-group">
+            <label class="block text-sm font-medium text-gray-700 mb-1" id="media-label">Upload Media</label>
+
+            <input type="file" name="image" accept="image/*" id="image-upload" class="w-full border rounded p-2 hidden">
+            <input type="file" name="video" accept="video/mp4" id="video-upload" class="w-full border rounded p-2 hidden">
+
+            <p class="text-xs text-gray-500 mt-1" id="media-hint">Upload optional image for your article.</p>
+        </div>
+
+        <!-- Hidden Body Field for AI Articles -->
+        <div style="display: none;">
             {{ form.body }}
         </div>
 
-        <!-- Button -->
+        <!-- Submit Button -->
         <button type="submit" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition">
-            ✨ Generate Article
+            🚀 Submit
         </button>
     </form>
-
 </div>
+
+<script>
+    const form = document.getElementById("ai-form");
+    const contentType = document.getElementById("content-type");
+    const summaryGroup = document.getElementById("summary-group");
+    const categoryGroup = document.getElementById("category-group");
+    const descriptionGroup = document.getElementById("description-group");
+    const imageInput = document.getElementById("image-upload");
+    const videoInput = document.getElementById("video-upload");
+    const mediaHint = document.getElementById("media-hint");
+    const mediaLabel = document.getElementById("media-label");
+
+    const toggleForm = () => {
+        const selected = contentType.value;
+
+        // Reset all visibility
+        imageInput.classList.add("hidden");
+        videoInput.classList.add("hidden");
+        descriptionGroup.classList.add("hidden");
+        summaryGroup.style.display = "block";
+        categoryGroup.style.display = "block";
+
+        if (selected === "article") {
+            mediaHint.textContent = "Upload optional image for your article.";
+            mediaLabel.textContent = "Upload Media";
+            imageInput.classList.remove("hidden");
+        } else if (selected === "image") {
+            summaryGroup.style.display = "none";
+            categoryGroup.style.display = "none";
+            descriptionGroup.classList.remove("hidden");
+            mediaHint.textContent = "Upload an AI-generated image (JPEG, PNG).";
+            mediaLabel.textContent = "AI Image Upload";
+            imageInput.classList.remove("hidden");
+        } else if (selected === "video") {
+            summaryGroup.style.display = "none";
+            categoryGroup.style.display = "none";
+            descriptionGroup.classList.remove("hidden");
+            mediaHint.textContent = "Upload an AI-generated video (MP4).";
+            mediaLabel.textContent = "AI Video Upload";
+            videoInput.classList.remove("hidden");
+        }
+    };
+
+    const updateFormAction = () => {
+        const selected = contentType.value;
+        let actionUrl = "";
+
+        switch (selected) {
+            case "article":
+                actionUrl = "{% url 'new_article' %}";
+                break;
+            case "image":
+                actionUrl = "{% url 'upload_image' %}";
+                break;
+            case "video":
+                actionUrl = "{% url 'upload_video' %}";
+                break;
+        }
+
+        form.action = actionUrl;
+    };
+
+    contentType.addEventListener("change", () => {
+        toggleForm();
+        updateFormAction();
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+        toggleForm();
+        updateFormAction();
+    });
+</script>
 {% endblock %}

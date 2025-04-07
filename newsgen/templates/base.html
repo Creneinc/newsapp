@@ -1,18 +1,18 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Crene is an AI-powered platform to generate and explore news articles, AI images, and videos.">
+    <title>{% block title %}Crene - AI-Powered News{% endblock %}</title>
+
     <!-- Favicon & App Icons -->
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-96x96.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
     <link rel="icon" type="image/png" sizes="192x192" href="{% static 'android-chrome-192x192.png' %}">
     <link rel="icon" type="image/png" sizes="512x512" href="{% static 'android-chrome-512x512.png' %}">
-
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Crene - AI-Powered News{% endblock %}</title>
 
     <!-- Tailwind & Flowbite -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,15 +23,29 @@
 
     <!-- ✅ Navbar -->
     <nav class="bg-white shadow-md px-6 py-3 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-
-            <!-- Left Section: Crene -->
+        <div class="max-w-7xl mx-auto flex justify-between items-center space-x-6">
             <a href="/" class="text-2xl font-bold text-emerald-600 hover:text-emerald-700 transition duration-300">Crene</a>
 
-            <!-- Right Section: Authentication & Navigation -->
-            <div class="space-x-6 hidden md:block">
-                <a href="/" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Home</a>
-                <a href="{% url 'new_article' %}" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition">Generate</a>
+            <div class="flex items-center space-x-6 hidden md:flex">
+                <!-- 🔍 Search -->
+                <form action="{% url 'search_results' %}" method="get" class="relative">
+                    <input
+                        type="text"
+                        name="q"
+                        placeholder="Search everything..."
+                        value="{{ request.GET.q }}"
+                        class="px-10 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:outline-none"
+                    />
+                    <button type="submit" class="absolute right-1 top-1.5 text-gray-500 hover:text-emerald-600">
+                        🔍
+                    </button>
+                </form>
+
+                <!-- Nav Links -->
+                <a href="{% url 'new_article' %}" class="text-sm font-medium {% if request.path == '/new/' %}text-emerald-700 font-bold{% else %}text-gray-700 hover:text-emerald-600{% endif %} transition">Generate</a>
+                <a href="https://euphorie.com" target="_blank" class="text-sm font-medium text-yellow-500 hover:underline">Chat</a>
+                <a href="https://diaryvault.com" target="_blank" class="text-sm font-medium text-yellow-600 hover:underline">Diary</a>
+
                 {% if user.is_authenticated %}
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
@@ -41,95 +55,127 @@
                     <a href="{% url 'login' %}" class="text-sm font-medium text-emerald-600 hover:underline">Login</a>
                     <a href="{% url 'signup' %}" class="text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
                 {% endif %}
-                <a href="https://euphorie.com" target="_blank" class="text-sm font-medium text-yellow-500 hover:underline">Chat</a>
-                <a href="https://diaryvault.com" target="_blank" class="text-sm font-medium text-yellow-600 hover:underline">Diary</a>
-	       </div>
-
-            <!-- Hamburger Icon (for mobile) -->
-            <div class="md:hidden flex items-center">
-                <button id="menu-toggle" class="text-2xl text-emerald-600 focus:outline-none">
-                    &#9776;
-                </button>
             </div>
 
+            <div class="md:hidden">
+                <button id="menu-toggle" class="text-2xl text-emerald-600 focus:outline-none">&#9776;</button>
+            </div>
         </div>
     </nav>
 
-    <!-- 🔥 Category Navigation Bar -->
+    <!-- ✅ Categories Nav (Desktop) -->
     <div class="bg-gray-100 py-3 shadow-sm hidden md:block">
         <div class="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 justify-center">
             <a href="{% url 'article_list' %}?category=All" class="px-5 py-2 text-sm font-semibold rounded-md
-                {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-                All Articles
-            </a>
+                {% if request.resolver_match.url_name == 'article_list' and request.GET.category|default:'All' == 'All' %}
+                    bg-emerald-700 text-white
+                {% else %}
+                    bg-gray-200 text-gray-800 hover:bg-gray-300
+                {% endif %}">All Articles</a>
+
             {% for key, value in categories.items %}
                 <a href="{% url 'article_list' %}?category={{ key }}" class="px-5 py-2 text-sm font-semibold rounded-md
-                    {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-                    {{ value }}
-                </a>
+                    {% if request.resolver_match.url_name == 'article_list' and request.GET.category == key %}
+                        bg-emerald-700 text-white
+                    {% else %}
+                        bg-gray-200 text-gray-800 hover:bg-gray-300
+                    {% endif %}">{{ value }}</a>
             {% endfor %}
+
+            <a href="{% url 'ai_image_gallery' %}" class="px-5 py-2 text-sm font-semibold rounded-md
+                {% if request.resolver_match.url_name == 'ai_image_gallery' %} bg-emerald-700 text-white {% else %} bg-emerald-100 text-gray-800 hover:bg-emerald-300 {% endif %}">
+                AI Images
+            </a>
+
+            <a href="{% url 'ai_video_gallery' %}" class="px-5 py-2 text-sm font-semibold rounded-md
+                {% if request.resolver_match.url_name == 'ai_video_gallery' %} bg-emerald-700 text-white {% else %} bg-emerald-100 text-gray-800 hover:bg-emerald-300 {% endif %}">
+                AI Videos
+            </a>
         </div>
     </div>
 
-    <!-- ✅ Mobile Dropdown -->
-    <div id="mobile-menu" class="hidden md:hidden w-full px-6 space-y-4 py-4 bg-white shadow-md">
+    <!-- ✅ Mobile Dropdown Menu -->
+    <div id="mobile-menu"
+     class="absolute top-[64px] left-0 right-0 z-40 bg-white shadow-md overflow-hidden max-h-0 opacity-0 pointer-events-none transition-all duration-300 ease-in-out md:hidden w-full px-6 py-4 space-y-2 rounded-b-lg">
         <a href="{% url 'article_list' %}?category=All" class="block px-5 py-2 text-sm font-semibold rounded-md
-            {% if not request.GET.category or request.GET.category == 'All' %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-            All Articles
-        </a>
+            {% if request.resolver_match.url_name == 'article_list' and request.GET.category|default:'All' == 'All' %}
+                bg-emerald-700 text-white
+            {% else %}
+                bg-gray-200 text-gray-800 hover:bg-gray-300
+            {% endif %}">All Articles</a>
+
         {% for key, value in categories.items %}
             <a href="{% url 'article_list' %}?category={{ key }}" class="block px-5 py-2 text-sm font-semibold rounded-md
-                {% if request.GET.category == key %} bg-emerald-700 text-white {% else %} bg-gray-200 text-gray-800 hover:bg-gray-300 {% endif %}">
-                {{ value }}
-            </a>
+                {% if request.resolver_match.url_name == 'article_list' and request.GET.category == key %}
+                    bg-emerald-700 text-white
+                {% else %}
+                    bg-gray-200 text-gray-800 hover:bg-gray-300
+                {% endif %}">{{ value }}</a>
         {% endfor %}
 
-        <!-- Euphorie -->
-        <a href="https://euphorie.com" target="_blank" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-300 text-white transition duration-300">
-        Chat
+        <a href="{% url 'ai_image_gallery' %}" class="block px-5 py-2 text-sm font-semibold rounded-md
+            {% if request.resolver_match.url_name == 'ai_image_gallery' %} bg-emerald-700 text-white {% else %} bg-emerald-100 text-gray-800 hover:bg-emerald-300 {% endif %}">
+            AI Images
+        </a>
+        <a href="{% url 'ai_video_gallery' %}" class="block px-5 py-2 text-sm font-semibold rounded-md
+            {% if request.resolver_match.url_name == 'ai_video_gallery' %} bg-emerald-700 text-white {% else %} bg-emerald-100 text-gray-800 hover:bg-emerald-300 {% endif %}">
+            AI Videos
         </a>
 
-        <!-- DiaryVault -->
-        <a href="http://diaryvault.com" target="_blank"  class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-400 text-white transition duration-300">        
-        Diary
-	</a>
+        <a href="{% url 'new_article' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">Generate</a>
 
-        <!-- Generate (always visible) -->
-        <a href="{% url 'new_article' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition duration-300">
-            Generate
-        </a>
-
-        {% if not user.is_authenticated %}
-            <a href="{% url 'login' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition duration-300">Login</a>
-            <a href="{% url 'signup' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition duration-300">Sign Up</a>
-        {% else %}
-            <form method="post" action="{% url 'logout' %}" class="block">
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit" class="w-full text-left px-5 py-2 text-sm font-semibold rounded-md bg-red-500 text-white hover:bg-red-600 transition duration-300">Logout</button>
+                <button type="submit" class="w-full text-left px-5 py-2 text-sm font-semibold rounded-md bg-red-500 text-white hover:bg-red-600">Logout</button>
             </form>
+        {% else %}
+            <a href="{% url 'login' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Login</a>
+            <a href="{% url 'signup' %}" class="block px-5 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Sign Up</a>
         {% endif %}
     </div>
 
-    <!-- ✅ Main Content Area -->
-    <main class="max-w-10xl mx-auto px-0 py-0">
+    <!-- ✅ Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {% block content %}{% endblock %}
     </main>
 
     <!-- ✅ Footer -->
-    <footer class="bg-white shadow-md py-4">
+    <footer class="bg-white shadow-md py-4 mt-10">
         <div class="max-w-7xl mx-auto px-6 text-center text-sm text-gray-600">
             <p>&copy; 2025 Crene News. All rights reserved.</p>
         </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.js"></script>
-
+    <!-- Scripts -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.1.1/flowbite.min.js"></script>
     <script>
-        document.getElementById("menu-toggle").addEventListener("click", function () {
-            var menu = document.getElementById("mobile-menu");
-            menu.classList.toggle("hidden");
-        });
-    </script>
-</body>
+        const toggleButton = document.getElementById("menu-toggle");
+        const mobileMenu = document.getElementById("mobile-menu");
 
+        const openMenu = () => {
+          mobileMenu.classList.remove("max-h-0", "opacity-0", "pointer-events-none");
+          mobileMenu.classList.add("max-h-[1000px]", "opacity-100");
+          document.addEventListener("click", closeOnOutsideClick);
+        };
+
+        const closeMenu = () => {
+          mobileMenu.classList.add("max-h-0", "opacity-0", "pointer-events-none");
+          mobileMenu.classList.remove("max-h-[1000px]", "opacity-100");
+          document.removeEventListener("click", closeOnOutsideClick);
+        };
+
+        const closeOnOutsideClick = (e) => {
+          if (!mobileMenu.contains(e.target) && !toggleButton.contains(e.target)) {
+            closeMenu();
+          }
+        };
+
+        toggleButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = mobileMenu.classList.contains("max-h-[1000px]");
+          isOpen ? closeMenu() : openMenu();
+        });
+      </script>
+</body>
 </html>
