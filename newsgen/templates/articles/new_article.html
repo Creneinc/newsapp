@@ -118,23 +118,26 @@
         categoryGroup.style.display = "block";
 
         if (selected === "article") {
+            // For "Generate News Article" select
             mediaHint.textContent = "Upload optional image for your article.";
             mediaLabel.textContent = "Upload Media";
-            imageInput.classList.remove("hidden");
+            imageInput.classList.remove("hidden"); // Show image upload
         } else if (selected === "image") {
+            // For "Upload AI Image"
             summaryGroup.style.display = "none";
             categoryGroup.style.display = "none";
             descriptionGroup.classList.remove("hidden");
             mediaHint.textContent = "Upload an AI-generated image (JPEG, PNG).";
             mediaLabel.textContent = "AI Image Upload";
-            imageInput.classList.remove("hidden");
+            imageInput.classList.remove("hidden"); // Show image upload
         } else if (selected === "video") {
+            // For "Upload AI Video"
             summaryGroup.style.display = "none";
             categoryGroup.style.display = "none";
             descriptionGroup.classList.remove("hidden");
             mediaHint.textContent = "Upload an AI-generated video (MP4).";
             mediaLabel.textContent = "AI Video Upload";
-            videoInput.classList.remove("hidden");
+            videoInput.classList.remove("hidden"); // Show video upload
         }
     };
 
@@ -144,7 +147,7 @@
 
         switch (selected) {
             case "article":
-                actionUrl = "{% url 'create_article' %}";  // Ensure this points to the create_article view
+                actionUrl = "{% url 'create_article' %}";  // This should point to the article creation view
                 break;
             case "image":
                 actionUrl = "{% url 'upload_image' %}";
@@ -192,7 +195,6 @@
             }
         })
         .then(response => {
-            // Check if the response is ok before trying to parse JSON
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
             }
@@ -209,6 +211,7 @@
             console.error('Error:', error);
             alert("Something went wrong. Please try again: " + error.message);
         });
+    }); // Added this closing brace that was missing
 
     contentType.addEventListener("change", () => {
         toggleForm();

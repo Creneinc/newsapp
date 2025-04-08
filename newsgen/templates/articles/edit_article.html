@@ -1,8 +1,6 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Edit Article - {{ article.title }}{% endblock %}
-
 {% block content %}
 <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
     <h2 class="text-2xl font-bold text-gray-900 mb-4">✏️ Edit Article</h2>
@@ -14,12 +12,6 @@
         <div>
             <label class="block text-gray-700 font-medium">Title</label>
             {{ form.title|add_class:"w-full border rounded p-2 focus:ring focus:ring-emerald-300" }}
-        </div>
-
-        <!-- Summary -->
-        <div>
-            <label class="block text-gray-700 font-medium">Summary (Optional)</label>
-            {{ form.summary|add_class:"w-full border rounded p-2 focus:ring focus:ring-emerald-300" }}
         </div>
 
         <!-- Category Selection -->
@@ -34,16 +26,15 @@
             </select>
         </div>
 
-        <!-- 📝 Article Body (Now Properly Loads) -->
+        <!-- Article Body -->
         <div>
             <label class="block text-gray-700 font-medium">Article Body</label>
-            <textarea name="body" rows="8"
-                    class="w-full border rounded p-2 focus:ring focus:ring-emerald-300">{% if form.body.value %}{{ form.body.value }}{% else %}{{ article.body }}{% endif %}</textarea>
+            <textarea name="body" rows="8" class="w-full border rounded p-2 focus:ring focus:ring-emerald-300">{{ article.body }}</textarea>
         </div>
 
         <!-- Image Upload -->
         <div>
-            <label class="block text-gray-700 font-medium">Upload New Image</label>
+            <label class="block text-gray-700 font-medium">Upload New Image (Optional)</label>
             <input type="file" name="image" class="w-full border rounded p-2">
         </div>
 
@@ -51,27 +42,21 @@
         {% if article.image %}
             <div class="mt-3">
                 <p class="text-gray-600 text-sm">Current Image:</p>
-                <img id="image-preview" src="{{ article.image.url }}"
-                     class="w-48 h-32 object-cover rounded shadow">
+                <img id="image-preview" src="{{ article.image.url }}" class="w-48 h-32 object-cover rounded shadow">
             </div>
         {% endif %}
 
         <!-- Action Buttons -->
         <div class="flex justify-between items-center mt-6">
             <div class="flex space-x-4">
-                <button type="submit" name="save"
-                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md">
+                <button type="submit" name="save" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md">
                     💾 Save Changes
                 </button>
-
-                <button type="submit" name="regenerate"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                <button type="submit" name="regenerate" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
                     🔄 Regenerate with AI
                 </button>
             </div>
-
-            <a href="{% url 'article_list' %}"
-               class="text-gray-500 hover:underline">
+            <a href="{% url 'article_list' %}" class="text-gray-500 hover:underline">
                 ❌ Cancel
             </a>
         </div>
