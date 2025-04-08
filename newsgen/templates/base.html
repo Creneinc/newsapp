@@ -103,7 +103,7 @@
             {% endif %}">All Articles</a>
 
         {% for key, value in categories.items %}
-            <a href="{% url 'article_list' %}?category={{ key }}" class="block px-4 py-2 text-sm font-semibold rounded-md
+            <a href="{% url 'article_list' %}?category={{ key }}" class="block px-2 py-2 text-sm font-semibold rounded-md
                 {% if request.resolver_match.url_name == 'article_list' and request.GET.category == key %}
                     bg-emerald-700 text-white
                 {% else %}
@@ -134,7 +134,7 @@
     </div>
 
     <!-- ✅ Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-4 py-2">
+    <main class="max-w-7xl mx-auto px-4 sm:px-2 py-2">
         {% block content %}{% endblock %}
     </main>
 

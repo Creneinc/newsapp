@@ -114,38 +114,38 @@ def new_article(request):
 # 🆕 Generate Article View (AJAX)
 def create_article(request):
     if request.method == 'POST':
-        print("Received POST request")
+        try:
+            # Parse JSON data
+            data = json.loads(request.body)
+            title = data.get('title', '')
+            summary = data.get('summary', '')
+            category = data.get('category', 'General')
 
-        # Check if the CSRF token is valid
-        print("CSRF Token:", request.META.get('HTTP_X_CSRFTOKEN'))
-
-        form = ArticleForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            print("Form is valid")
-            title = form.cleaned_data['title']
-            summary = form.cleaned_data['summary']
-            category = form.cleaned_data['category']
-
-            # Simulate generating the article content
+            # Generate the article content
             article_content = generate_article(title, summary, category)
-            print(f"Generated content: {article_content}")
 
             if article_content.startswith("Error"):
-                # Return error response in JSON format
                 return JsonResponse({'status': 'error', 'message': article_content}, status=400)
 
             # Save the article
-            article = form.save(commit=False)
-            article.body = article_content  # Ensure content is assigned to the 'body' field
-            article.user = request.user  # Ensure the logged-in user is assigned to the article
-            article.save()
+            form = ArticleForm({
+                'title': title,
+                'summary': summary,
+                'category': category,
+                'body': article_content
+            })
 
-            # Return success response in JSON format
-            return JsonResponse({'status': 'success', 'message': 'Article created successfully', 'article_id': article.id})
+            if form.is_valid():
+                article = form.save(commit=False)
+                article.user = request.user
+                article.save()
 
-        print("Form is not valid")
-        return JsonResponse({'status': 'error', 'message': 'Failed to create article due to form validation errors'}, status=400)
+                return JsonResponse({'status': 'success', 'message': 'Article created successfully', 'article_id': article.id})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Form validation failed'}, status=400)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON format'}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
