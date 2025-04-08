@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class ArticleForm(forms.ModelForm):
     body = forms.CharField(widget=forms.HiddenInput(), required=False)
-    image = models.ImageField(upload_to='article_images/', blank=True, null=True)
+    image = forms.ImageField(required=False)  # Use forms.ImageField instead of models.ImageField
     video = forms.FileField(required=False)  # ✅ Add video field to support AIVideo uploads
 
     class Meta:
@@ -31,6 +31,7 @@ class ArticleForm(forms.ModelForm):
             raise forms.ValidationError(f"Unsupported file extension. Supported formats: {', '.join(valid_extensions)}")
 
         return image
+
 
 class CommentForm(forms.ModelForm):
     class Meta:

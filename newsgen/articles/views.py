@@ -10,7 +10,9 @@ from .models import Article, Comment, AIImage, AIVideo
 from .forms import ArticleForm, CommentForm
 import requests
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 CATEGORIES = dict(Article.CATEGORY_CHOICES)
 
@@ -92,7 +94,7 @@ def new_article(request):
 
         post_data = request.POST.copy()
         post_data['body'] = article_text
-        form = ArticleForm(post_data, request.FILES)
+        form = ArticleForm(post_data, request.FILES)  # Make sure to pass request.FILES
 
         if form.is_valid():
             article = form.save(commit=False)
@@ -110,16 +112,18 @@ def new_article(request):
         'categories': CATEGORIES,
     })
 
-
 # 🆕 Generate Article View (AJAX)
 def create_article(request):
     if request.method == 'POST':
         try:
-            # Parse JSON data
-            data = json.loads(request.body)
-            title = data.get('title', '')
-            summary = data.get('summary', '')
-            category = data.get('category', 'General')
+            # Access form data and files directly from the request
+            title = request.POST.get('title', '')
+            summary = request.POST.get('summary', '')
+            category = request.POST.get('category', 'General')
+
+            # Validate the data
+            if not title or not summary or not category:
+                return JsonResponse({'status': 'error', 'message': 'All fields are required!'}, status=400)
 
             # Generate the article content
             article_content = generate_article(title, summary, category)
@@ -127,13 +131,13 @@ def create_article(request):
             if article_content.startswith("Error"):
                 return JsonResponse({'status': 'error', 'message': article_content}, status=400)
 
-            # Save the article
+            # Save the article using the ArticleForm
             form = ArticleForm({
                 'title': title,
                 'summary': summary,
                 'category': category,
                 'body': article_content
-            })
+            }, request.FILES)  # Ensure to pass request.FILES for file handling
 
             if form.is_valid():
                 article = form.save(commit=False)
@@ -144,10 +148,13 @@ def create_article(request):
             else:
                 return JsonResponse({'status': 'error', 'message': 'Form validation failed'}, status=400)
 
-        except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON format'}, status=400)
+        except Exception as e:
+            # Log the exception for debugging
+            logger.error(f"Error in create_article: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': 'An error occurred while processing the request.'}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
 
 # 🚀 Mistral AI Article Generator
 def generate_article(title, summary, category):
@@ -179,6 +186,7 @@ def generate_article(title, summary, category):
     except Exception as e:
         print(f"General Error: {e}")
         return "Error: AI failed to generate content. Please try again."
+
 
 
 # 🖼 Upload AI Image

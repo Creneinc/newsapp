@@ -181,18 +181,13 @@
         startLoading();  // Start showing loading animation
 
         // Create a FormData object from the form
-        const formData = new FormData(form);
+        const formData = new FormData(form);  // This will automatically include all form fields and files
 
         // Use AJAX to submit the form asynchronously
         fetch(form.action, {
             method: 'POST',
-            body: JSON.stringify({
-                title: title,
-                summary: summary,
-                category: category
-            }),
+            body: formData,  // Use the FormData object directly
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRFToken': form.querySelector('[name="csrfmiddlewaretoken"]').value
             }
         })
