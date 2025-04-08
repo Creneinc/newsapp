@@ -123,29 +123,37 @@ def create_article(request):
             category = request.POST.get('category', 'General')
 
             # Validate the data
-            if not title or not summary or not category:
-                return JsonResponse({'status': 'error', 'message': 'All fields are required!'}, status=400)
+            if not title or not summary:
+                return JsonResponse({'status': 'error', 'message': 'Title and summary are required!'}, status=400)
+
+            # Log what we're trying to do
+            logger.info(f"Generating article with title: {title}, category: {category}")
 
             # Generate the article content
             article_content = generate_article(title, summary, category)
 
+            # Log the result
             if article_content.startswith("Error"):
-                logger.error(f"Article generation error: {article_content}")
+                logger.error(f"Article generation failed: {article_content}")
                 return JsonResponse({'status': 'error', 'message': article_content}, status=500)
 
+            logger.info("Article generated successfully, saving to database...")
+
             # Save the article using the ArticleForm
-            form = ArticleForm({
+            form_data = {
                 'title': title,
                 'summary': summary,
                 'category': category,
                 'body': article_content
-            }, request.FILES)
+            }
+
+            form = ArticleForm(form_data, request.FILES)
 
             if form.is_valid():
                 article = form.save(commit=False)
                 article.user = request.user
                 article.save()
-
+                logger.info(f"Article saved with ID: {article.id}")
                 return JsonResponse({'status': 'success', 'message': 'Article created successfully', 'article_id': article.id})
             else:
                 logger.error(f"Form validation failed: {form.errors}")
@@ -153,8 +161,8 @@ def create_article(request):
 
         except Exception as e:
             # Log the exception for debugging
-            logger.error(f"Error in create_article: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': f'An error occurred: {str(e)}'}, status=500)
+            logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
@@ -167,38 +175,31 @@ def generate_article(title, summary, category):
     prompt += "\nOnly write the body of the article. Do not include the title."
 
     try:
+        # Try non-streaming mode first (more reliable)
         response = requests.post(
             "http://localhost:11434/api/generate",
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "model": "mistral",
                 "prompt": prompt,
-                "stream": True
+                "stream": False  # Disable streaming for simplicity
             }),
-            stream=True
+            timeout=60  # Add timeout to prevent hanging
         )
+
         response.raise_for_status()
-
-        # Process the stream correctly
-        full_response = ""
-        for line in response.iter_lines():
-            if line:
-                line_json = json.loads(line)
-                full_response += line_json.get("response", "")
-                if line_json.get("done", False):
-                    break
-
-        return full_response
+        result = response.json()
+        return result.get("response", "")
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Request Error: {e}")
-        return f"Error: Unable to reach the AI service. Please try again later."
+        return "Error: Unable to reach the AI service. Please try again later."
     except json.JSONDecodeError as e:
-        logger.error(f"JSON Decode Error: {e}")
+        logger.error(f"JSON Decode Error: {e}, Response: {response.text}")
         return f"Error: Invalid response from AI service. Please try again later."
     except Exception as e:
         logger.error(f"General Error: {e}")
-        return f"Error: AI failed to generate content. Please try again."
+        return "Error: AI failed to generate content. Please try again."
 
 
 
