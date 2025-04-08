@@ -5,6 +5,7 @@ from django.contrib.auth import login
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
 from .models import Article, Comment, AIImage, AIVideo
 from .forms import ArticleForm, CommentForm
 import requests
@@ -95,7 +96,7 @@ def new_article(request):
 
         if form.is_valid():
             article = form.save(commit=False)
-            article.user = request.user
+            article.user = request.user  # Ensure the logged-in user is assigned to the article
             article.save()
             messages.success(request, '✅ Article generated successfully.')
             return redirect('article_detail', pk=article.pk)
@@ -109,6 +110,44 @@ def new_article(request):
         'categories': CATEGORIES,
     })
 
+
+# 🆕 Generate Article View (AJAX)
+def create_article(request):
+    if request.method == 'POST':
+        print("Received POST request")
+
+        # Check if the CSRF token is valid
+        print("CSRF Token:", request.META.get('HTTP_X_CSRFTOKEN'))
+
+        form = ArticleForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            print("Form is valid")
+            title = form.cleaned_data['title']
+            summary = form.cleaned_data['summary']
+            category = form.cleaned_data['category']
+
+            # Simulate generating the article content
+            article_content = generate_article(title, summary, category)
+            print(f"Generated content: {article_content}")
+
+            if article_content.startswith("Error"):
+                # Return error response in JSON format
+                return JsonResponse({'status': 'error', 'message': article_content}, status=400)
+
+            # Save the article
+            article = form.save(commit=False)
+            article.body = article_content  # Ensure content is assigned to the 'body' field
+            article.user = request.user  # Ensure the logged-in user is assigned to the article
+            article.save()
+
+            # Return success response in JSON format
+            return JsonResponse({'status': 'success', 'message': 'Article created successfully', 'article_id': article.id})
+
+        print("Form is not valid")
+        return JsonResponse({'status': 'error', 'message': 'Failed to create article due to form validation errors'}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 # 🚀 Mistral AI Article Generator
 def generate_article(title, summary, category):
@@ -124,59 +163,76 @@ def generate_article(title, summary, category):
             data=json.dumps({
                 "model": "mistral",
                 "prompt": prompt,
-                "stream": False
+                "stream": False  # Set to False to get the full response immediately
             })
         )
         response.raise_for_status()
-        return response.json()["response"]
+        # Ensure a proper response is received and return it
+        response_json = response.json()
+        if "response" in response_json:
+            return response_json["response"]
+        else:
+            return "Error: AI returned no content. Please try again."
+    except requests.exceptions.RequestException as e:
+        print(f"Request Error: {e}")
+        return "Error: Unable to reach the AI service. Please try again later."
     except Exception as e:
-        print(f"Ollama Error: {e}")
+        print(f"General Error: {e}")
         return "Error: AI failed to generate content. Please try again."
 
 
 # 🖼 Upload AI Image
 @login_required
 def upload_image(request):
-    if request.method == 'POST':
+    if request.method == 'POST' and request.FILES.get('image'):
+        image_file = request.FILES['image']
         title = request.POST.get('title', 'Untitled AI Image')
-        prompt = request.POST.get('description', '')  # ✅ updated to match form
-        image_file = request.FILES.get('image')
+        prompt = request.POST.get('description', '')
 
-        if not image_file:
-            messages.error(request, "⚠️ Please upload an image.")
-            return redirect('ai_image_gallery')
+        if image_file:
+            AIImage.objects.create(
+                user=request.user,
+                title=title,
+                prompt_used=prompt,
+                image=image_file,
+            )
+            response_data = {
+                'status': 'success',
+                'message': '✅ AI image uploaded successfully.',
+                'redirect_url': '/ai-images/'  # Change this URL as per your use case
+            }
+            return JsonResponse(response_data)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'No image selected!'}, status=400)
 
-        AIImage.objects.create(
-            user=request.user,
-            title=title,
-            prompt_used=prompt,  # ✅ this will now have content
-            image=image_file,
-        )
-
-        messages.success(request, "✅ AI image uploaded successfully.")
-        return redirect('ai_image_gallery')
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 # 🎞 Upload AI Video
 @login_required
 def upload_video(request):
     if request.method == 'POST':
         title = request.POST.get('title', 'Untitled AI Video')
-        description = request.POST.get('description', '')  # ✅ updated here
+        description = request.POST.get('description', '')
         video_file = request.FILES.get('video')
 
         if not video_file:
-            messages.error(request, "⚠️ Please upload a video.")
-            return redirect('ai_video_gallery')
+            return JsonResponse({'status': 'error', 'message': '⚠️ Please upload a video.'}, status=400)
 
-        AIVideo.objects.create(
-            user=request.user,
-            title=title,
-            prompt_used=description,  # ✅ save to correct field
-            video=video_file,
-        )
-
-        messages.success(request, "✅ AI video uploaded successfully.")
-        return redirect('ai_video_gallery')
+        # Create the video object
+        try:
+            video = AIVideo.objects.create(
+                user=request.user,
+                title=title,
+                prompt_used=description,
+                video=video_file
+            )
+            return JsonResponse({
+                'status': 'success',
+                'message': '✅ Video uploaded successfully.',
+                'video_id': video.id
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f"⚠️ Error: {str(e)}"}, status=500)
 
 
 # 🖼 AI Image Gallery
@@ -272,3 +328,31 @@ def ai_video_detail(request, pk):
         'video': video,
         'categories': CATEGORIES  # ✅ include it here too
     })
+
+@login_required
+def delete_ai_image(request, pk):
+    # Get the AI image
+    image = get_object_or_404(AIImage, pk=pk)
+
+    # Check if the current user is the creator
+    if image.user == request.user:
+        image.delete()
+        messages.success(request, '✅ Your image has been deleted.')
+    else:
+        messages.error(request, '⚠️ You are not authorized to delete this image.')
+
+    return redirect('ai_image_gallery')  # Redirect back to the gallery
+
+@login_required
+def delete_ai_video(request, pk):
+    # Get the AI video
+    video = get_object_or_404(AIVideo, pk=pk)
+
+    # Check if the current user is the creator
+    if video.user == request.user:
+        video.delete()
+        messages.success(request, '✅ Your video has been deleted.')
+    else:
+        messages.error(request, '⚠️ You are not authorized to delete this video.')
+
+    return redirect('ai_video_gallery')  # Redirect back to the video gallery

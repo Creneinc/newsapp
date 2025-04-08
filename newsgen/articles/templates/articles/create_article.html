@@ -1,21 +1,12 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Create with AI{% endblock %}
+{% block title %}Create a New Article{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-md space-y-6">
-
-    <!-- 🔘 Content Type Selector -->
-    <div>
-        <h2 class="text-2xl font-bold text-emerald-700 mb-2">🧠 Create with AI</h2>
-        <p class="text-gray-600 text-sm mb-4">Choose what you'd like to create and fill in the relevant info below.</p>
-        <select id="content-type" name="content-type" class="w-full border rounded p-2">
-            <option value="article">📰 Generate News Article</option>
-            <option value="image">🖼️ Upload AI Image</option>
-            <option value="video">🎞️ Upload AI Video</option>
-        </select>
-    </div>
+    <h2 class="text-2xl font-bold text-emerald-700 mb-4">🧠 Create with AI</h2>
+    <p class="text-gray-600 text-sm mb-4">Please fill out the form below to create a new article.</p>
 
     <form method="post" enctype="multipart/form-data" class="space-y-6" id="ai-form">
         {% csrf_token %}
@@ -47,7 +38,7 @@
             </select>
         </div>
 
-        <!-- Description for AI Image/Video -->
+        <!-- Description for AI Image/Video (Optional) -->
         <div id="description-group" class="hidden">
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea name="description" id="description" class="w-full border rounded p-2 h-28"></textarea>
@@ -56,22 +47,14 @@
             </p>
         </div>
 
-        <!-- Image/Video Upload -->
+        <!-- Image/Video Upload (Optional) -->
         <div id="media-group">
             <label class="block text-sm font-medium text-gray-700 mb-1" id="media-label">Upload Media</label>
 
-            <!-- Image Upload -->
             <input type="file" name="image" accept="image/*" id="image-upload" class="w-full border rounded p-2 hidden">
-
-            <!-- Video Upload -->
             <input type="file" name="video" accept="video/mp4" id="video-upload" class="w-full border rounded p-2 hidden">
 
             <p class="text-xs text-gray-500 mt-1" id="media-hint">Upload optional image for your article.</p>
-        </div>
-
-        <!-- Hidden Body Field for AI Articles -->
-        <div style="display: none;">
-            {{ form.body }}
         </div>
 
         <!-- Submit Button -->
@@ -195,7 +178,7 @@
         .then(data => {
             if (data.status === 'success') {
                 // Handle success response
-                loadingText.textContent = "Content generated successfully!";
+                loadingText.textContent = "Article generated successfully!";
                 window.location.href = "{% url 'article_list' %}";
             } else {
                 // Handle error

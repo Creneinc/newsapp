@@ -6,37 +6,49 @@
   {% if images %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for image in images %}
-      <a href="{% url 'ai_image_detail' image.pk %}" class="block">
-        <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
-          <img src="{{ image.image.url }}" alt="AI Image" class="w-full h-48 object-cover bg-gray-100">
-          <div class="p-4">
-            <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ image.title }}</h2>
-            {% if image.prompt_used %}
-              <p class="text-sm text-gray-600 line-clamp-2">{{ image.prompt_used }}</p>
-            {% endif %}
-            <div class="text-xs text-gray-500 mt-2 flex items-center justify-between">
-              <span>{{ image.generated_at|date:"M d, Y" }}</span>
-              <span class="text-emerald-500">🧠 AIgen</span>
+      <div class="relative">
+        <a href="{% url 'ai_image_detail' image.pk %}" class="block">
+          <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
+            <img src="{{ image.image.url }}" alt="AI Image" class="w-full h-48 object-cover bg-gray-100">
+            <div class="p-4">
+              <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ image.title }}</h2>
+              {% if image.prompt_used %}
+                <p class="text-sm text-gray-600 line-clamp-2">{{ image.prompt_used }}</p>
+              {% endif %}
+              <div class="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                <span>{{ image.generated_at|date:"M d, Y" }}</span>
+                <span class="text-emerald-500">🧠 AIgen</span>
+              </div>
             </div>
           </div>
-        </div>
-       </a>
+        </a>
+
+        <!-- Delete Button (Only for the creator of the image) -->
+        {% if image.user == user %}
+          <form action="{% url 'delete_ai_image' image.pk %}" method="post" class="absolute top-0 right-0 m-2">
+            {% csrf_token %}
+            <button type="submit" class="px-1 py-0.5 bg-red-600 text-white rounded-full hover:bg-red-700">
+              🗑
+            </button>
+          </form>
+        {% endif %}
+      </div>
       {% endfor %}
     </div>
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-      <div class="mt-8 flex justify-center space-x-2">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
-        {% endif %}
+    <div class="mt-8 flex justify-center space-x-2">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
+      {% endif %}
 
-        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
+      <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
 
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
-        {% endif %}
-      </div>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
+      {% endif %}
+    </div>
     {% endif %}
 
   {% else %}

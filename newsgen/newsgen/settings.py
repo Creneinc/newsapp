@@ -139,3 +139,12 @@ LOGIN_REDIRECT_URL = '/'  # Redirect to homepage after login
 LOGOUT_REDIRECT_URL = '/'  # Redirect to homepage after logout
 
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost']
+
+# Increase file upload size (in bytes)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB (for example)
+
+# Maximum size for files uploaded through FileField or ImageField
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+
+# You can also define the maximum size for image files (if needed)
+# MAX_IMAGE_UPLOAD_SIZE = 104857600  # 100 MB, if you have image fields
