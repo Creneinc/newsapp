@@ -11,6 +11,7 @@ from .forms import ArticleForm, CommentForm
 import requests
 import json
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -170,16 +171,24 @@ def generate_article(title, summary, category):
             data=json.dumps({
                 "model": "mistral",
                 "prompt": prompt,
-                "stream": False  # Set to False to get the full response immediately
-            })
+                "stream": True  # Enable streaming
+            }),
+            stream=True  # This ensures that the content is streamed back
         )
         response.raise_for_status()
-        # Ensure a proper response is received and return it
-        response_json = response.json()
-        if "response" in response_json:
-            return response_json["response"]
-        else:
-            return "Error: AI returned no content. Please try again."
+
+        # Collect the full response incrementally as the model sends parts
+        full_response = ""
+        while True:
+            chunk = response.json()
+            full_response += chunk.get("response", "")
+
+            # Break the loop when the response is done
+            if chunk.get("done", False):
+                break
+            time.sleep(1)  # Wait before checking again
+
+        return full_response
     except requests.exceptions.RequestException as e:
         print(f"Request Error: {e}")
         return "Error: Unable to reach the AI service. Please try again later."
