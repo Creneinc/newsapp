@@ -130,7 +130,8 @@ def create_article(request):
             article_content = generate_article(title, summary, category)
 
             if article_content.startswith("Error"):
-                return JsonResponse({'status': 'error', 'message': article_content}, status=400)
+                logger.error(f"Article generation error: {article_content}")
+                return JsonResponse({'status': 'error', 'message': article_content}, status=500)
 
             # Save the article using the ArticleForm
             form = ArticleForm({
@@ -138,7 +139,7 @@ def create_article(request):
                 'summary': summary,
                 'category': category,
                 'body': article_content
-            }, request.FILES)  # Ensure to pass request.FILES for file handling
+            }, request.FILES)
 
             if form.is_valid():
                 article = form.save(commit=False)
@@ -147,12 +148,13 @@ def create_article(request):
 
                 return JsonResponse({'status': 'success', 'message': 'Article created successfully', 'article_id': article.id})
             else:
-                return JsonResponse({'status': 'error', 'message': 'Form validation failed'}, status=400)
+                logger.error(f"Form validation failed: {form.errors}")
+                return JsonResponse({'status': 'error', 'message': f'Form validation failed: {form.errors}'}, status=400)
 
         except Exception as e:
             # Log the exception for debugging
             logger.error(f"Error in create_article: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': 'An error occurred while processing the request.'}, status=500)
+            return JsonResponse({'status': 'error', 'message': f'An error occurred: {str(e)}'}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
@@ -171,30 +173,32 @@ def generate_article(title, summary, category):
             data=json.dumps({
                 "model": "mistral",
                 "prompt": prompt,
-                "stream": True  # Enable streaming
+                "stream": True
             }),
-            stream=True  # This ensures that the content is streamed back
+            stream=True
         )
         response.raise_for_status()
 
-        # Collect the full response incrementally as the model sends parts
+        # Process the stream correctly
         full_response = ""
-        while True:
-            chunk = response.json()
-            full_response += chunk.get("response", "")
-
-            # Break the loop when the response is done
-            if chunk.get("done", False):
-                break
-            time.sleep(1)  # Wait before checking again
+        for line in response.iter_lines():
+            if line:
+                line_json = json.loads(line)
+                full_response += line_json.get("response", "")
+                if line_json.get("done", False):
+                    break
 
         return full_response
+
     except requests.exceptions.RequestException as e:
-        print(f"Request Error: {e}")
-        return "Error: Unable to reach the AI service. Please try again later."
+        logger.error(f"Request Error: {e}")
+        return f"Error: Unable to reach the AI service. Please try again later."
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON Decode Error: {e}")
+        return f"Error: Invalid response from AI service. Please try again later."
     except Exception as e:
-        print(f"General Error: {e}")
-        return "Error: AI failed to generate content. Please try again."
+        logger.error(f"General Error: {e}")
+        return f"Error: AI failed to generate content. Please try again."
 
 
 
