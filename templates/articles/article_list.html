@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Crene - The Future of News{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-2">
+
+    <!-- 📰 Main News Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- 🌟 Featured Article (Largest) -->
+        <div class="md:col-span-2 bg-white shadow-lg rounded-lg overflow-hidden">
+            {% if articles %}
+                <div class="p-6">
+                    {% if articles.0.category == "AI Image" %}
+                        <!-- 🧠 AI Generated Image Display -->
+                        <img src="{{ articles.0.image.url }}" class="w-full h-96 object-contain rounded-lg bg-gray-100" alt="{{ articles.0.title }}">
+                        <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                        <p class="text-gray-600 mt-2 text-lg italic">AI-generated image description:</p>
+                        <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
+
+                    {% elif articles.0.category == "AI Video" %}
+                        <!-- 🎥 AI Generated Video Embed -->
+                        <video controls class="w-full rounded-lg bg-black h-96 mt-2">
+                            <source src="{{ articles.0.video.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                        <p class="text-gray-600 mt-2 text-lg italic">AI-generated video description:</p>
+                        <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
+
+                    {% else %}
+                        <!-- 📰 Standard News -->
+                        {% if articles.0.image %}
+                            <img src="{{ articles.0.image.url }}" class="w-full h-64 object-cover object-center rounded-lg" alt="{{ articles.0.title }}">
+                        {% endif %}
+                        <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                        <p class="text-gray-600 mt-2 text-lg">{{ articles.0.body|linebreaksbr }}</p>
+                    {% endif %}
+                    <div class="mt-4 text-sm text-gray-500">
+                        🕒 {{ articles.0.created_at|date:"M d, Y" }} · ✍️ {{ articles.0.user.username }}
+                    </div>
+                    <a href="{% url 'article_detail' articles.0.pk %}"
+                       class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
+                        Read More →
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 📰 Sidebar: Latest News -->
+        <div class="bg-white shadow-lg rounded-lg p-4">
+            <h3 class="text-xl font-bold text-gray-900">Latest News</h3>
+            <ul class="mt-2 space-y-3">
+                {% for article in articles|slice:"1:5" %}
+                <li>
+                    <a href="{% url 'article_detail' article.pk %}" class="block text-gray-800 hover:text-emerald-600 font-medium">
+                        {{ article.title }}
+                    </a>
+                    <div class="text-xs text-gray-500">
+                        🕒 {{ article.created_at|date:"M d, Y" }} · ✍️ {{ article.user.username }}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- 📢 More Articles -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        {% for article in articles|slice:"5:20" %}
+        <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
+            {% if article.category == "AI Image" %}
+                <img src="{{ article.image.url }}" class="w-full h-48 object-contain bg-gray-100" alt="{{ article.title }}">
+            {% elif article.category == "AI Video" %}
+                <video controls class="w-full h-48 bg-black">
+                    <source src="{{ article.video.url }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            {% elif article.image %}
+                <img src="{{ article.image.url }}" class="w-full h-40 object-cover object-center" alt="{{ article.title }}">
+            {% endif %}
+            <div class="p-4 flex-1">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <a href="{% url 'article_detail' article.pk %}" class="hover:text-emerald-600">
+                        {{ article.title }}
+                    </a>
+                </h3>
+                <p class="text-sm text-gray-600 mt-2">
+                    {% with article.body|linebreaksbr as body %}
+                        {{ body|slice:":200" }}
+                    {% endwith %}
+                </p>
+                <a href="{% url 'article_detail' article.pk %}" class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
+                    Read More →
+                </a>
+                <div class="mt-3 text-xs text-gray-500">
+                    🕒 {{ article.created_at|date:"M d, Y" }} · ✍️ {{ article.user.username }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not articles %}
+        <p class="text-gray-500 mt-6 text-center">No articles yet. Start writing!</p>
+    {% endif %}
+
+</div>
+{% endblock %}

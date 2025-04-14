@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+  <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+    <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full object-cover max-h-[500px]">
+
+    <div class="p-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ image.title|default:"Untitled AI Image" }}</h1>
+      <p class="text-sm text-gray-500 mb-4">Generated on {{ image.generated_at|date:"F j, Y" }}</p>
+
+      {% if image.prompt_used %}
+      <p class="text-md text-gray-700 whitespace-pre-line">
+        {{ image.prompt_used|default:"DEBUG: Prompt is missing or empty" }}
+      </p>
+      {% else %}
+        <p class="italic text-gray-400">No prompt provided.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
