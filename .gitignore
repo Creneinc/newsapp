@@ -20,3 +20,8 @@ staticfiles/
 .env
 .git_backup/
 .git_backup/
+
+media/
+*.sock
+*.log
+venv/
