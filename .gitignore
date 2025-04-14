@@ -19,3 +19,4 @@ staticfiles/
 *.swo
 .env
 .git_backup/
+.git_backup/
