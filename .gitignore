@@ -18,3 +18,4 @@ staticfiles/
 *.swp
 *.swo
 .env
+.git_backup/
