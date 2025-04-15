@@ -113,52 +113,71 @@ def new_article(request):
         'categories': CATEGORIES,
     })
 
-# 🆕 Generate Article View (AJAX)
+
+
+
+
+
+
+
+
 def create_article(request):
     if request.method == 'POST':
         try:
-            # Access form data
-            title = request.POST.get('title', '')
-            summary = request.POST.get('summary', '')
-            category = request.POST.get('category', 'General')
+            # Log incoming files and form data
+            logger.info("Received AJAX POST request for article creation.")
+            logger.info(f"FILES: {request.FILES}")
+            logger.info(f"POST data: {request.POST}")
+
+            # Get fields from request
+            title = request.POST.get('title', '').strip()
+            summary = request.POST.get('summary', '').strip()
+            category = request.POST.get('category', 'General').strip()
 
             # Validate required fields
             if not title:
+                logger.warning("Missing title in request.")
                 return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
 
             # Generate article content
             article_content = generate_article(title, summary, category)
 
-            # Create and save the article
-            form = ArticleForm({
+            # Log content length
+            logger.info(f"Generated article content length: {len(article_content)}")
+
+            # Prepare form data
+            form_data = {
                 'title': title,
                 'summary': summary,
                 'category': category,
                 'body': article_content
-            }, request.FILES)
+            }
 
+            logger.info(f"Form data passed: {form_data}")
+            form = ArticleForm(form_data, request.FILES)
+
+            # Validate and save form
             if form.is_valid():
                 article = form.save(commit=False)
                 article.user = request.user
                 article.save()
 
+                logger.info(f"Article created successfully with ID: {article.id}")
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Article created successfully!',
                     'article_id': article.id
                 })
+
             else:
+                logger.warning(f"Form validation failed: {form.errors}")
                 return JsonResponse({
                     'status': 'error',
                     'message': f'Form validation failed: {form.errors}'
                 }, status=400)
 
         except Exception as e:
-            # Log the exception
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error in create_article: {str(e)}", exc_info=True)
-
+            logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
             return JsonResponse({
                 'status': 'error',
                 'message': 'An unexpected error occurred. Please try again.'
@@ -167,10 +186,15 @@ def create_article(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
-# 🚀 Mistral AI Article Generator
+
+
+
+
+
 def generate_article(title, summary, category):
-    """Generate article content using Mistral AI or fallback to a template if API is unavailable."""
     import logging
+    import requests
+
     logger = logging.getLogger(__name__)
 
     prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
@@ -178,46 +202,39 @@ def generate_article(title, summary, category):
         prompt += f"Summary: {summary}\n"
     prompt += "\nOnly write the body of the article. Do not include the title."
 
-    # Try to use the Mistral API
     try:
-        # Set a reasonable timeout
+        logger.info("Sending request to Mistral API...")
+
         response = requests.post(
             "http://localhost:11434/api/generate",
             headers={"Content-Type": "application/json"},
             json={
                 "model": "mistral",
                 "prompt": prompt,
-                "stream": False  # Simpler to handle
+                "stream": False
             },
-            timeout=30  # 30-second timeout
+            timeout=10
         )
 
-        # Check if request was successful
+        logger.info(f"Mistral API responded with status code {response.status_code}")
+
         if response.status_code == 200:
             result = response.json()
             article_content = result.get("response", "")
-
-            # Sanity check - make sure we got reasonable content
-            if len(article_content) > 50:  # Arbitrary minimum length
-                return article_content
+            if len(article_content.strip()) > 50:
+                return article_content.strip()
             else:
-                logger.warning(f"Received too short content from API: {article_content}")
-                # Fall through to backup method
+                logger.warning("Mistral returned content that was too short.")
         else:
-            logger.error(f"API returned status code {response.status_code}: {response.text}")
-            # Fall through to backup method
+            logger.error(f"Mistral API error: {response.status_code} - {response.text}")
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Request error: {e}")
-        # Fall through to backup method
+        logger.error(f"Request to Mistral failed: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        # Fall through to backup method
+        logger.error(f"Unexpected error during Mistral call: {e}")
 
-    # If we reached here, API call failed - use a backup template
-    logger.info("Using backup article template due to API failure")
+    logger.info("Falling back to static article template...")
 
-    # Create a basic article template as fallback
     return f"""
     As discussions around tariffs intensify within the {category} sector, the Trump administration's stance has drawn mixed reactions from various stakeholders.
 
@@ -233,6 +250,13 @@ def generate_article(title, summary, category):
 
     As this situation evolves, businesses are advised to prepare contingency plans to address possible shifts in the trade landscape.
     """.strip()
+
+
+
+
+
+
+
 
 
 
