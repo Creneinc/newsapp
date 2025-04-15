@@ -6,7 +6,7 @@ from django.conf import settings  # Make sure to import settings
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+@shared_task(bind=True, max_retries=3, default_retry_delay=30, time_limit=600)
 def generate_article_task(self, title, summary, category, article_id):
     try:
         # Prepare the prompt for the article generation
