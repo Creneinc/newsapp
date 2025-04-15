@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+
 {% block title %}{{ article.title }} - Crene{% endblock %}
 
 {% block content %}
@@ -14,8 +15,15 @@
     {% endif %}
 
     <!-- 📝 Article Content (Fixed Formatting) -->
-    <div class="mt-6 text-lg text-gray-800 space-y-6">
-        {{ article.body|linebreaks }}
+    <div id="article-body" class="mt-6 text-lg text-gray-800 space-y-6">
+        {% if article.body == "⏳ Generating article..." %}
+            <!-- Loading spinner or message for generating -->
+            <div id="loading-message" class="text-center text-emerald-600 font-semibold">
+                Still generating the article... Please wait.
+            </div>
+        {% else %}
+            {{ article.body|linebreaks }}
+        {% endif %}
     </div>
 
     <!-- 🔹 Edit & Delete (Only for Author) -->
@@ -67,4 +75,34 @@
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+    // Polling for article generation status
+    function checkArticleGenerationStatus() {
+        const articleId = {{ article.id }};
+        fetch(`/check_article_status/${articleId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    // Update the body content once the article is generated
+                    document.getElementById('article-body').innerHTML = data.body;
+                    document.getElementById('loading-message').innerHTML = '';
+                } else {
+                    // Continue polling if the article is still being generated
+                    setTimeout(checkArticleGenerationStatus, 3000); // Poll every 3 seconds
+                }
+            })
+            .catch(error => {
+                console.error('Error checking article status:', error);
+            });
+    }
+
+    // Start polling if article body is still being generated
+    {% if article.body == "⏳ Generating article..." %}
+        checkArticleGenerationStatus();
+    {% endif %}
+</script>
+{% endblock %}
+
 {% endblock %}

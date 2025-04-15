@@ -5,11 +5,11 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-1-uo!bsknus0sqp+zxcfo7)%j*bnv7bn*&@wkks$9**uck2k29'
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 
-DEBUG = True  # ❗ Change to False in production
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = ['crene.com', 'www.crene.com', 'your_public_ip', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -75,10 +75,10 @@ USE_TZ = True
 # ✅ AWS + S3 + CloudFront config
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = 'crene-newsapp-media'
-AWS_S3_REGION_NAME = 'us-west-1'
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-west-1")
 AWS_QUERYSTRING_AUTH = False
-CLOUDFRONT_DOMAIN = 'd20lhzuermlqtq.cloudfront.net'
+CLOUDFRONT_DOMAIN = os.getenv("CLOUDFRONT_DOMAIN")
 
 # ✅ Static files (S3)
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -100,3 +100,14 @@ CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost']
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+try:
+    from .settings_local import *
+except ImportError:
+    pass
+
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")

@@ -6,8 +6,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 from articles.views import signup_view, CATEGORIES
 from articles.views import search_results, ai_image_detail, ai_video_detail
-
-
+from articles import views
 
 urlpatterns = [
     path('', article_list, name='article_list'),
@@ -27,4 +26,5 @@ urlpatterns = [
     path('ai-videos/<int:pk>/', ai_video_detail, name='ai_video_detail'),
     path('ai-images/delete/<int:pk>/', views.delete_ai_image, name='delete_ai_image'),
     path('ai-videos/delete/<int:pk>/', views.delete_ai_video, name='delete_ai_video'),
+    path('check-article-status/', views.check_article_status, name='check_article_status'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

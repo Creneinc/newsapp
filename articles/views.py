@@ -8,10 +8,15 @@ from django.db.models import Q
 from django.http import JsonResponse
 from .models import Article, Comment, AIImage, AIVideo
 from .forms import ArticleForm, CommentForm
+from articles.tasks import generate_article_task
+from django.template.loader import render_to_string
+from celery.result import AsyncResult
+from uuid import uuid4
 import requests
 import json
 import logging
 import time
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +35,7 @@ def signup_view(request):
 
     return render(request, 'registration/signup.html', {
         'form': form,
-        'categories': CATEGORIES  # This should already exist at the top
+        'categories': CATEGORIES
     })
 
 # 🌍 Homepage: Article List with Optional Category Filter
@@ -53,7 +58,6 @@ def article_list(request):
         'categories': CATEGORIES,
         'selected_category': category,
     })
-
 
 # 🔎 Article Detail + Comments
 def article_detail(request, pk):
@@ -79,8 +83,7 @@ def article_detail(request, pk):
         'categories': CATEGORIES,
     })
 
-
-# 🆕 Generate News Article
+# 🔟 Generate News Article
 @login_required
 def new_article(request):
     if request.method == 'POST':
@@ -88,64 +91,48 @@ def new_article(request):
         summary = request.POST.get('summary', '')
         category = request.POST.get('category', 'General')
 
-        article_text = generate_article(title, summary, category)
-        if not article_text or article_text.startswith("Error"):
-            messages.error(request, "⚠️ Failed to generate article. Please try again.")
-            return redirect('new_article')
+        # Save the article immediately with no body yet
+        article = Article.objects.create(
+            user=request.user,
+            title=title,
+            summary=summary,
+            category=category,
+            body="⏳ Generating article..."
+        )
 
-        post_data = request.POST.copy()
-        post_data['body'] = article_text
-        form = ArticleForm(post_data, request.FILES)  # Make sure to pass request.FILES
+        # Kick off async generation and store task ID
+        task = generate_article_task.delay(article.pk, title, summary, category)
+        request.session['article_task_id'] = str(task.id)
+        request.session['article_id'] = article.pk
 
-        if form.is_valid():
-            article = form.save(commit=False)
-            article.user = request.user  # Ensure the logged-in user is assigned to the article
-            article.save()
-            messages.success(request, '✅ Article generated successfully.')
-            return redirect('article_detail', pk=article.pk)
-        else:
-            messages.error(request, "⚠️ Form validation failed.")
-    else:
-        form = ArticleForm()
+        return redirect('article_pending')  # ⬅️ new route we'll add below
 
+    form = ArticleForm()
     return render(request, 'articles/new_article.html', {
         'form': form,
         'categories': CATEGORIES,
     })
 
 
-
-
-
-
-
-
-
 def create_article(request):
     if request.method == 'POST':
         try:
-            # Log incoming files and form data
             logger.info("Received AJAX POST request for article creation.")
             logger.info(f"FILES: {request.FILES}")
             logger.info(f"POST data: {request.POST}")
 
-            # Get fields from request
             title = request.POST.get('title', '').strip()
             summary = request.POST.get('summary', '').strip()
             category = request.POST.get('category', 'General').strip()
 
-            # Validate required fields
             if not title:
                 logger.warning("Missing title in request.")
                 return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
 
-            # Generate article content
             article_content = generate_article(title, summary, category)
 
-            # Log content length
             logger.info(f"Generated article content length: {len(article_content)}")
 
-            # Prepare form data
             form_data = {
                 'title': title,
                 'summary': summary,
@@ -153,16 +140,13 @@ def create_article(request):
                 'body': article_content
             }
 
-            logger.info(f"Form data passed: {form_data}")
             form = ArticleForm(form_data, request.FILES)
 
-            # Validate and save form
             if form.is_valid():
                 article = form.save(commit=False)
                 article.user = request.user
                 article.save()
 
-                logger.info(f"Article created successfully with ID: {article.id}")
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Article created successfully!',
@@ -170,7 +154,6 @@ def create_article(request):
                 })
 
             else:
-                logger.warning(f"Form validation failed: {form.errors}")
                 return JsonResponse({
                     'status': 'error',
                     'message': f'Form validation failed: {form.errors}'
@@ -186,17 +169,9 @@ def create_article(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
-
-
-
-
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 
 def generate_article(title, summary, category):
-    import logging
-    import requests
-
-    logger = logging.getLogger(__name__)
-
     prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
     if summary:
         prompt += f"Summary: {summary}\n"
@@ -206,14 +181,14 @@ def generate_article(title, summary, category):
         logger.info("Sending request to Mistral API...")
 
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            f"{OLLAMA_API_URL}/api/generate",
             headers={"Content-Type": "application/json"},
             json={
                 "model": "mistral",
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=10
+            timeout=None  # 🔗 Wait indefinitely
         )
 
         logger.info(f"Mistral API responded with status code {response.status_code}")
@@ -233,32 +208,30 @@ def generate_article(title, summary, category):
     except Exception as e:
         logger.error(f"Unexpected error during Mistral call: {e}")
 
-    logger.info("Falling back to static article template...")
-
     return f"""
-    As discussions around tariffs intensify within the {category} sector, the Trump administration's stance has drawn mixed reactions from various stakeholders.
+    {category}
 
     {summary}
-
-    Experts in the field have noted that while tariffs can protect domestic industries in the short term, they often lead to complex economic consequences including potential retaliatory measures from trading partners.
-
-    The administration has defended its position, citing the need to balance trade relationships and protect American businesses and workers. Critics, however, point to potential increased costs for consumers and disruption of global supply chains.
-
-    Market analysts continue to monitor developments closely, as policy decisions in this area will likely have far-reaching implications for businesses across multiple sectors.
-
-    "We're in a period of significant economic recalibration," noted one industry observer. "How these policies are implemented will substantially impact both domestic and international economic relationships."
-
-    As this situation evolves, businesses are advised to prepare contingency plans to address possible shifts in the trade landscape.
     """.strip()
 
+def check_article_status(request, pk):
+    article = get_object_or_404(Article, pk=pk)
 
+    if article.body.startswith("GENERATING:"):
+        task_id = article.body.split(":")[1]
+        task_result = AsyncResult(task_id)
 
+        # If request is AJAX, just return the inner content
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'state': task_result.state})
 
+        return render(request, 'articles/check_status.html', {
+            'article': article,
+            'task_state': task_result.state,
+            'categories': CATEGORIES,
+        })
 
-
-
-
-
+    return redirect('article_detail', pk=pk)
 
 # 🖼 Upload AI Image
 @login_required
@@ -275,12 +248,11 @@ def upload_image(request):
                 prompt_used=prompt,
                 image=image_file,
             )
-            response_data = {
+            return JsonResponse({
                 'status': 'success',
                 'message': '✅ AI image uploaded successfully.',
-                'redirect_url': '/ai-images/'  # Change this URL as per your use case
-            }
-            return JsonResponse(response_data)
+                'redirect_url': '/ai-images/'
+            })
         else:
             return JsonResponse({'status': 'error', 'message': 'No image selected!'}, status=400)
 
@@ -297,7 +269,6 @@ def upload_video(request):
         if not video_file:
             return JsonResponse({'status': 'error', 'message': '⚠️ Please upload a video.'}, status=400)
 
-        # Create the video object
         try:
             video = AIVideo.objects.create(
                 user=request.user,
@@ -313,7 +284,6 @@ def upload_video(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f"⚠️ Error: {str(e)}"}, status=500)
 
-
 # 🖼 AI Image Gallery
 def ai_image_gallery(request):
     ai_images = AIImage.objects.select_related('user').order_by('-generated_at')
@@ -327,7 +297,6 @@ def ai_image_gallery(request):
         'categories': CATEGORIES,
     })
 
-
 # 🎞 AI Video Gallery
 def ai_video_gallery(request):
     ai_videos = AIVideo.objects.select_related('user').order_by('-generated_at')
@@ -335,7 +304,6 @@ def ai_video_gallery(request):
         'videos': ai_videos,
         'categories': CATEGORIES,
     })
-
 
 # 📝 Edit Article
 @login_required
@@ -355,7 +323,6 @@ def edit_article(request, pk):
         'article': article,
         'categories': CATEGORIES,
     })
-
 
 # ❌ Delete Article
 @login_required
@@ -398,40 +365,56 @@ def ai_image_detail(request, pk):
     image = get_object_or_404(AIImage, pk=pk)
     return render(request, 'articles/ai_image_detail.html', {
         'image': image,
-        'categories': CATEGORIES  # ✅ added this line
+        'categories': CATEGORIES
     })
 
 def ai_video_detail(request, pk):
     video = get_object_or_404(AIVideo, pk=pk)
     return render(request, 'articles/ai_video_detail.html', {
         'video': video,
-        'categories': CATEGORIES  # ✅ include it here too
+        'categories': CATEGORIES
     })
 
 @login_required
 def delete_ai_image(request, pk):
-    # Get the AI image
     image = get_object_or_404(AIImage, pk=pk)
-
-    # Check if the current user is the creator
     if image.user == request.user:
         image.delete()
         messages.success(request, '✅ Your image has been deleted.')
     else:
         messages.error(request, '⚠️ You are not authorized to delete this image.')
-
-    return redirect('ai_image_gallery')  # Redirect back to the gallery
+    return redirect('ai_image_gallery')
 
 @login_required
 def delete_ai_video(request, pk):
-    # Get the AI video
     video = get_object_or_404(AIVideo, pk=pk)
-
-    # Check if the current user is the creator
     if video.user == request.user:
         video.delete()
         messages.success(request, '✅ Your video has been deleted.')
     else:
         messages.error(request, '⚠️ You are not authorized to delete this video.')
+    return redirect('ai_video_gallery')
 
-    return redirect('ai_video_gallery')  # Redirect back to the video gallery
+
+@login_required
+def check_article_status(request):
+    task_id = request.session.get('article_task_id')
+    article_id = request.session.get('article_id')
+
+    if not task_id or not article_id:
+        return JsonResponse({'status': 'error'})
+
+    result = AsyncResult(task_id)
+
+    if result.ready():
+        try:
+            article = Article.objects.get(pk=article_id)
+            if article.body and "⏳" not in article.body:
+                return JsonResponse({
+                    'status': 'done',
+                    'redirect_url': f"/articles/{article.pk}/"
+                })
+        except Article.DoesNotExist:
+            pass
+
+    return JsonResponse({'status': 'pending'})

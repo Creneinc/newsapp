@@ -20,6 +20,7 @@ class Article(models.Model):
     image = models.ImageField(upload_to='article_images/', max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=20, default="pending")  # e.g., "pending", "in_progress", "completed"
 
     def __str__(self):
         return self.title
