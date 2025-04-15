@@ -47,6 +47,57 @@ def new_article(request):
         'form': form,
         'categories': CATEGORIES,
     })
+def generate_article(title, summary, category):
+    prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
+    if summary:
+        prompt += f"Summary: {summary}\n"
+    prompt += "\nOnly write the body of the article. Do not include the title."
+
+    try:
+        logger.info("Sending request to Mistral API...")
+
+        response = requests.post(
+            f"{OLLAMA_API_URL}/api/generate",
+            headers={"Content-Type": "application/json"},
+            json={
+                "model": "mistral",
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=600  # Increase timeout if necessary
+        )
+
+        # Log the response content to check its structure
+        logger.info(f"Mistral API response: {response.text}")
+
+        if response.status_code == 200:
+            try:
+                result = response.json()  # Try to parse the JSON response
+                article_content = result.get("response", "")
+                if len(article_content.strip()) > 50:
+                    return article_content.strip()
+                else:
+                    logger.warning("Mistral returned content that was too short.")
+            except ValueError as e:
+                logger.error(f"Error parsing Mistral response as JSON: {e}")
+                logger.error(f"Raw response: {response.text}")
+                return "Error: Unable to process the AI response."
+
+        else:
+            logger.error(f"Mistral API error: {response.status_code} - {response.text}")
+            return f"Error: {response.status_code} - {response.text}"
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request to Mistral failed: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error during Mistral call: {e}")
+
+    return f"""
+    {category}
+
+    {summary}
+    """.strip()
+
 
 # 📝 AJAX Article Creation
 @login_required
