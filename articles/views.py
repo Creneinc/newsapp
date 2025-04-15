@@ -129,35 +129,69 @@ def create_article(request):
                 logger.warning("Missing title in request.")
                 return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
 
-            article_content = generate_article(title, summary, category)
+            # First, create the article with a "generating" status
+            article = Article.objects.create(
+                user=request.user,
+                title=title,
+                summary=summary,
+                category=category,
+                body="⏳ Generating article..."
+            )
 
-            logger.info(f"Generated article content length: {len(article_content)}")
+            # Make sure we're using the model we've pulled
+            try:
+                logger.info("Sending request to Ollama API...")
 
-            form_data = {
-                'title': title,
-                'summary': summary,
-                'category': category,
-                'body': article_content
-            }
+                response = requests.post(
+                    f"{OLLAMA_API_URL}/api/generate",
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "model": "mistral",  # Use the model you've pulled
+                        "prompt": f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n{f'Summary: {summary}' if summary else ''}\n\nOnly write the body of the article. Do not include the title.",
+                        "stream": True
+                    },
+                    timeout=600  # Set a reasonable timeout (2 minutes)
+                )
 
-            form = ArticleForm(form_data, request.FILES)
+                logger.info(f"Ollama API responded with status code {response.status_code}")
 
-            if form.is_valid():
-                article = form.save(commit=False)
-                article.user = request.user
+                if response.status_code == 200:
+                    result = response.json()
+                    article_content = result.get("response", "")
+                    
+                    # Update the article with the generated content
+                    if len(article_content.strip()) > 50:
+                        article.body = article_content.strip()
+                        article.save()
+                        return JsonResponse({
+                            'status': 'success',
+                            'message': 'Article created successfully!',
+                            'article_id': article.id
+                        })
+                    else:
+                        logger.warning("Ollama returned content that was too short.")
+                        article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
+                        article.save()
+                else:
+                    logger.error(f"Ollama API error: {response.status_code} - {response.text}")
+                    article.body = f"Error generating content. Status code: {response.status_code}"
+                    article.save()
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request to Ollama failed: {e}")
+                article.body = f"Error connecting to AI service: {str(e)}\n\n{summary}"
+                article.save()
+            except Exception as e:
+                logger.error(f"Unexpected error during Ollama call: {e}")
+                article.body = f"Unexpected error: {str(e)}\n\n{summary}"
                 article.save()
 
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Article created successfully!',
-                    'article_id': article.id
-                })
-
-            else:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': f'Form validation failed: {form.errors}'
-                }, status=400)
+            # Even if we had an error, we created an article, so return success
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Article created (with potential errors).',
+                'article_id': article.id
+            })
 
         except Exception as e:
             logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
