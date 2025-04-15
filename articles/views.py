@@ -21,7 +21,7 @@ import os
 logger = logging.getLogger(__name__)
 
 CATEGORIES = dict(Article.CATEGORY_CHOICES)
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+OLLAMA_API_URL = "http://localhost:11434"  # Directly using localhost API URL for Mistral
 
 # 🔐 User Signup
 def signup_view(request):
@@ -47,6 +47,7 @@ def new_article(request):
         'form': form,
         'categories': CATEGORIES,
     })
+
 def generate_article(title, summary, category):
     prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
     if summary:
@@ -64,7 +65,7 @@ def generate_article(title, summary, category):
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=600  # Increase timeout if necessary
+            timeout=600  # Increased timeout if necessary
         )
 
         # Log the response content to check its structure
@@ -257,165 +258,3 @@ def article_detail(request, pk):
         'form': form,
         'categories': CATEGORIES,
     })
-
-# 🖼 Upload AI Image
-@login_required
-def upload_image(request):
-    if request.method == 'POST' and request.FILES.get('image'):
-        image_file = request.FILES['image']
-        title = request.POST.get('title', 'Untitled AI Image')
-        prompt = request.POST.get('description', '')
-
-        if image_file:
-            AIImage.objects.create(
-                user=request.user,
-                title=title,
-                prompt_used=prompt,
-                image=image_file,
-            )
-            return JsonResponse({
-                'status': 'success',
-                'message': '✅ AI image uploaded successfully.',
-                'redirect_url': '/ai-images/'
-            })
-        else:
-            return JsonResponse({'status': 'error', 'message': 'No image selected!'}, status=400)
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
-
-# 🎞 Upload AI Video
-@login_required
-def upload_video(request):
-    if request.method == 'POST':
-        title = request.POST.get('title', 'Untitled AI Video')
-        description = request.POST.get('description', '')
-        video_file = request.FILES.get('video')
-
-        if not video_file:
-            return JsonResponse({'status': 'error', 'message': '⚠️ Please upload a video.'}, status=400)
-
-        try:
-            video = AIVideo.objects.create(
-                user=request.user,
-                title=title,
-                prompt_used=description,
-                video=video_file
-            )
-            return JsonResponse({
-                'status': 'success',
-                'message': '✅ Video uploaded successfully.',
-                'video_id': video.id
-            }, status=200)
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f"⚠️ Error: {str(e)}"}, status=500)
-
-# 🖼 AI Image Gallery
-def ai_image_gallery(request):
-    ai_images = AIImage.objects.select_related('user').order_by('-generated_at')
-    paginator = Paginator(ai_images, 12)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    return render(request, 'articles/ai_image_gallery.html', {
-        'page_obj': page_obj,
-        'images': page_obj.object_list,
-        'categories': CATEGORIES,
-    })
-
-# 🎞 AI Video Gallery
-def ai_video_gallery(request):
-    ai_videos = AIVideo.objects.select_related('user').order_by('-generated_at')
-    return render(request, 'articles/ai_video_gallery.html', {
-        'videos': ai_videos,
-        'categories': CATEGORIES,
-    })
-
-# 📝 Edit Article
-@login_required
-def edit_article(request, pk):
-    article = get_object_or_404(Article, pk=pk, user=request.user)
-    if request.method == 'POST':
-        form = ArticleForm(request.POST, request.FILES, instance=article)
-        if form.is_valid():
-            form.save()
-            messages.success(request, '✅ Article updated successfully.')
-            return redirect('article_detail', pk=article.pk)
-    else:
-        form = ArticleForm(instance=article)
-
-    return render(request, 'articles/edit_article.html', {
-        'form': form,
-        'article': article,
-        'categories': CATEGORIES,
-    })
-
-# ❌ Delete Article
-@login_required
-def delete_article(request, pk):
-    article = get_object_or_404(Article, pk=pk, user=request.user)
-    if request.method == 'POST':
-        article.delete()
-        messages.success(request, '🗑️ Article deleted successfully.')
-        return redirect('article_list')
-
-    return render(request, 'articles/delete_article.html', {'article': article})
-
-def search_results(request):
-    query = request.GET.get('q', '')
-
-    articles = Article.objects.filter(
-        Q(title__icontains=query) |
-        Q(summary__icontains=query) |
-        Q(body__icontains=query)
-    )
-
-    ai_images = AIImage.objects.filter(
-        Q(title__icontains=query) |
-        Q(prompt_used__icontains=query)
-    )
-
-    ai_videos = AIVideo.objects.filter(
-        Q(title__icontains=query) |
-        Q(prompt_used__icontains=query)
-    )
-
-    return render(request, 'articles/search_results.html', {
-        'query': query,
-        'articles': articles,
-        'images': ai_images,
-        'videos': ai_videos,
-    })
-
-def ai_image_detail(request, pk):
-    image = get_object_or_404(AIImage, pk=pk)
-    return render(request, 'articles/ai_image_detail.html', {
-        'image': image,
-        'categories': CATEGORIES
-    })
-
-def ai_video_detail(request, pk):
-    video = get_object_or_404(AIVideo, pk=pk)
-    return render(request, 'articles/ai_video_detail.html', {
-        'video': video,
-        'categories': CATEGORIES
-    })
-
-@login_required
-def delete_ai_image(request, pk):
-    image = get_object_or_404(AIImage, pk=pk)
-    if image.user == request.user:
-        image.delete()
-        messages.success(request, '✅ Your image has been deleted.')
-    else:
-        messages.error(request, '⚠️ You are not authorized to delete this image.')
-    return redirect('ai_image_gallery')
-
-@login_required
-def delete_ai_video(request, pk):
-    video = get_object_or_404(AIVideo, pk=pk)
-    if video.user == request.user:
-        video.delete()
-        messages.success(request, '✅ Your video has been deleted.')
-    else:
-        messages.error(request, '⚠️ You are not authorized to delete this video.')
-    return redirect('ai_video_gallery')
