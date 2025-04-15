@@ -21,6 +21,7 @@ import os
 logger = logging.getLogger(__name__)
 
 CATEGORIES = dict(Article.CATEGORY_CHOICES)
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 
 # 🔐 User Signup
 def signup_view(request):
@@ -37,6 +38,129 @@ def signup_view(request):
         'form': form,
         'categories': CATEGORIES
     })
+
+# 🧠 Create with AI form
+@login_required
+def new_article(request):
+    form = ArticleForm()
+    return render(request, 'articles/new_article.html', {
+        'form': form,
+        'categories': CATEGORIES,
+    })
+
+# 📝 AJAX Article Creation
+@login_required
+def create_article(request):
+    if request.method == 'POST':
+        try:
+            logger.info("Received AJAX POST request for article creation.")
+            logger.info(f"FILES: {request.FILES}")
+            logger.info(f"POST data: {request.POST}")
+
+            title = request.POST.get('title', '').strip()
+            summary = request.POST.get('summary', '').strip()
+            category = request.POST.get('category', 'General').strip()
+
+            if not title:
+                logger.warning("Missing title in request.")
+                return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
+
+            # First, create the article with a "generating" status
+            article = Article.objects.create(
+                user=request.user,
+                title=title,
+                summary=summary,
+                category=category,
+                body="⏳ Generating article..."
+            )
+
+            # Make sure we're using the model we've pulled
+            try:
+                logger.info("Sending request to Mistral API...")
+
+                response = requests.post(
+                    f"{OLLAMA_API_URL}/api/generate",
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "model": "mistral",  # Use the model you've pulled
+                        "prompt": f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n{f'Summary: {summary}' if summary else ''}\n\nOnly write the body of the article. Do not include the title.",
+                        "stream": True
+                    },
+                    timeout=600  # Set a reasonable timeout (10 minutes)
+                )
+
+                logger.info(f"Mistral API responded with status code {response.status_code}")
+
+                if response.status_code == 200:
+                    result = response.json()
+                    article_content = result.get("response", "")
+
+                    # Update the article with the generated content
+                    if len(article_content.strip()) > 50:
+                        article.body = article_content.strip()
+                        article.save()
+                        return JsonResponse({
+                            'status': 'success',
+                            'message': 'Article created successfully!',
+                            'article_id': article.id
+                        })
+                    else:
+                        logger.warning("Mistral returned content that was too short.")
+                        article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
+                        article.save()
+                else:
+                    logger.error(f"Mistral API error: {response.status_code} - {response.text}")
+                    article.body = f"Error generating content. Status code: {response.status_code}"
+                    article.save()
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request to Mistral failed: {e}")
+                article.body = f"Error connecting to AI service: {str(e)}\n\n{summary}"
+                article.save()
+            except Exception as e:
+                logger.error(f"Unexpected error during Mistral call: {e}")
+                article.body = f"Unexpected error: {str(e)}\n\n{summary}"
+                article.save()
+
+            # Even if we had an error, we created an article, so return success
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Article created (with potential errors).',
+                'article_id': article.id
+            })
+
+        except Exception as e:
+            logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'status': 'error',
+                'message': 'An unexpected error occurred. Please try again.'
+            }, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+# Check status of article generation task via AJAX
+@login_required
+def check_article_status(request):
+    task_id = request.session.get('article_task_id')
+    article_id = request.session.get('article_id')
+
+    if not task_id or not article_id:
+        return JsonResponse({'status': 'error'})
+
+    result = AsyncResult(task_id)
+
+    if result.ready():
+        try:
+            article = Article.objects.get(pk=article_id)
+            if article.body and "⏳" not in article.body:
+                return JsonResponse({
+                    'status': 'done',
+                    'redirect_url': f"/articles/{article.pk}/"
+                })
+        except Article.DoesNotExist:
+            pass
+
+    return JsonResponse({'status': 'pending'})
 
 # 🌍 Homepage: Article List with Optional Category Filter
 def article_list(request):
@@ -82,190 +206,6 @@ def article_detail(request, pk):
         'form': form,
         'categories': CATEGORIES,
     })
-
-# 🔟 Generate News Article
-@login_required
-def new_article(request):
-    if request.method == 'POST':
-        title = request.POST.get('title', '')
-        summary = request.POST.get('summary', '')
-        category = request.POST.get('category', 'General')
-
-        # Save the article immediately with no body yet
-        article = Article.objects.create(
-            user=request.user,
-            title=title,
-            summary=summary,
-            category=category,
-            body="⏳ Generating article..."
-        )
-
-        # Kick off async generation and store task ID
-        task = generate_article_task.delay(article.pk, title, summary, category)
-        request.session['article_task_id'] = str(task.id)
-        request.session['article_id'] = article.pk
-
-        return redirect('article_pending')  # ⬅️ new route we'll add below
-
-    form = ArticleForm()
-    return render(request, 'articles/new_article.html', {
-        'form': form,
-        'categories': CATEGORIES,
-    })
-
-
-def create_article(request):
-    if request.method == 'POST':
-        try:
-            logger.info("Received AJAX POST request for article creation.")
-            logger.info(f"FILES: {request.FILES}")
-            logger.info(f"POST data: {request.POST}")
-
-            title = request.POST.get('title', '').strip()
-            summary = request.POST.get('summary', '').strip()
-            category = request.POST.get('category', 'General').strip()
-
-            if not title:
-                logger.warning("Missing title in request.")
-                return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
-
-            # First, create the article with a "generating" status
-            article = Article.objects.create(
-                user=request.user,
-                title=title,
-                summary=summary,
-                category=category,
-                body="⏳ Generating article..."
-            )
-
-            # Make sure we're using the model we've pulled
-            try:
-                logger.info("Sending request to Ollama API...")
-
-                response = requests.post(
-                    f"{OLLAMA_API_URL}/api/generate",
-                    headers={"Content-Type": "application/json"},
-                    json={
-                        "model": "mistral",  # Use the model you've pulled
-                        "prompt": f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n{f'Summary: {summary}' if summary else ''}\n\nOnly write the body of the article. Do not include the title.",
-                        "stream": True
-                    },
-                    timeout=600  # Set a reasonable timeout (2 minutes)
-                )
-
-                logger.info(f"Ollama API responded with status code {response.status_code}")
-
-                if response.status_code == 200:
-                    result = response.json()
-                    article_content = result.get("response", "")
-                    
-                    # Update the article with the generated content
-                    if len(article_content.strip()) > 50:
-                        article.body = article_content.strip()
-                        article.save()
-                        return JsonResponse({
-                            'status': 'success',
-                            'message': 'Article created successfully!',
-                            'article_id': article.id
-                        })
-                    else:
-                        logger.warning("Ollama returned content that was too short.")
-                        article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
-                        article.save()
-                else:
-                    logger.error(f"Ollama API error: {response.status_code} - {response.text}")
-                    article.body = f"Error generating content. Status code: {response.status_code}"
-                    article.save()
-
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Request to Ollama failed: {e}")
-                article.body = f"Error connecting to AI service: {str(e)}\n\n{summary}"
-                article.save()
-            except Exception as e:
-                logger.error(f"Unexpected error during Ollama call: {e}")
-                article.body = f"Unexpected error: {str(e)}\n\n{summary}"
-                article.save()
-
-            # Even if we had an error, we created an article, so return success
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Article created (with potential errors).',
-                'article_id': article.id
-            })
-
-        except Exception as e:
-            logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
-            return JsonResponse({
-                'status': 'error',
-                'message': 'An unexpected error occurred. Please try again.'
-            }, status=500)
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
-
-
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
-
-def generate_article(title, summary, category):
-    prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
-    if summary:
-        prompt += f"Summary: {summary}\n"
-    prompt += "\nOnly write the body of the article. Do not include the title."
-
-    try:
-        logger.info("Sending request to Mistral API...")
-
-        response = requests.post(
-            f"{OLLAMA_API_URL}/api/generate",
-            headers={"Content-Type": "application/json"},
-            json={
-                "model": "mistral",
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=None  # 🔗 Wait indefinitely
-        )
-
-        logger.info(f"Mistral API responded with status code {response.status_code}")
-
-        if response.status_code == 200:
-            result = response.json()
-            article_content = result.get("response", "")
-            if len(article_content.strip()) > 50:
-                return article_content.strip()
-            else:
-                logger.warning("Mistral returned content that was too short.")
-        else:
-            logger.error(f"Mistral API error: {response.status_code} - {response.text}")
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request to Mistral failed: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error during Mistral call: {e}")
-
-    return f"""
-    {category}
-
-    {summary}
-    """.strip()
-
-def check_article_status(request, pk):
-    article = get_object_or_404(Article, pk=pk)
-
-    if article.body.startswith("GENERATING:"):
-        task_id = article.body.split(":")[1]
-        task_result = AsyncResult(task_id)
-
-        # If request is AJAX, just return the inner content
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'state': task_result.state})
-
-        return render(request, 'articles/check_status.html', {
-            'article': article,
-            'task_state': task_result.state,
-            'categories': CATEGORIES,
-        })
-
-    return redirect('article_detail', pk=pk)
 
 # 🖼 Upload AI Image
 @login_required
@@ -428,27 +368,3 @@ def delete_ai_video(request, pk):
     else:
         messages.error(request, '⚠️ You are not authorized to delete this video.')
     return redirect('ai_video_gallery')
-
-
-@login_required
-def check_article_status(request):
-    task_id = request.session.get('article_task_id')
-    article_id = request.session.get('article_id')
-
-    if not task_id or not article_id:
-        return JsonResponse({'status': 'error'})
-
-    result = AsyncResult(task_id)
-
-    if result.ready():
-        try:
-            article = Article.objects.get(pk=article_id)
-            if article.body and "⏳" not in article.body:
-                return JsonResponse({
-                    'status': 'done',
-                    'redirect_url': f"/articles/{article.pk}/"
-                })
-        except Article.DoesNotExist:
-            pass
-
-    return JsonResponse({'status': 'pending'})
