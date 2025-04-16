@@ -37,7 +37,10 @@
                         <p class="text-gray-600 mt-2 text-lg">{{ articles.0.body|linebreaksbr }}</p>
                     {% endif %}
                     <div class="mt-4 text-sm text-gray-500">
-                        🕒 {{ articles.0.created_at|date:"M d, Y" }} · ✍️ {{ articles.0.user.username }}
+                        🕒 {{ articles.0.created_at|date:"M d, Y" }} · ✍️
+                        <a href="{% url 'public_profile' articles.0.user.username %}" class="text-emerald-600 hover:underline">
+                            {{ articles.0.user.username }}
+                        </a>
                     </div>
                     <a href="{% url 'article_detail' articles.0.pk %}"
                        class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
@@ -57,7 +60,10 @@
                         {{ article.title }}
                     </a>
                     <div class="text-xs text-gray-500">
-                        🕒 {{ article.created_at|date:"M d, Y" }} · ✍️ {{ article.user.username }}
+                        🕒 {{ article.created_at|date:"M d, Y" }} · ✍️
+                        <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+                            {{ article.user.username }}
+                        </a>
                     </div>
                 </li>
                 {% endfor %}
@@ -94,7 +100,10 @@
                     Read More →
                 </a>
                 <div class="mt-3 text-xs text-gray-500">
-                    🕒 {{ article.created_at|date:"M d, Y" }} · ✍️ {{ article.user.username }}
+                    🕒 {{ article.created_at|date:"M d, Y" }} · ✍️
+                    <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+                        {{ article.user.username }}
+                    </a>
                 </div>
             </div>
         </div>
