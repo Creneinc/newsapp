@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Earnings Dashboard | Crene{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Earnings Dashboard</h2>
+        <div class="flex space-x-2">
+            <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition">Content Dashboard</a>
+            <a href="{% url 'profile' %}" class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition">Profile</a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total Earnings -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-emerald-600 px-4 py-3">
+                <h4 class="text-lg font-semibold text-white">Total Earnings</h4>
+            </div>
+            <div class="p-8 text-center">
+                <span class="text-3xl font-bold text-gray-800">${{ total_earnings }}</span>
+                <p class="text-sm text-gray-600 mt-2">Lifetime earnings</p>
+            </div>
+        </div>
+
+        <!-- Pending Balance -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-emerald-600 px-4 py-3">
+                <h4 class="text-lg font-semibold text-white">Pending Balance</h4>
+            </div>
+            <div class="p-8 text-center">
+                <span class="text-3xl font-bold text-gray-800">${{ pending_balance }}</span>
+                <p class="text-sm text-gray-600 mt-2">Available for payout</p>
+            </div>
+        </div>
+
+        <!-- Stripe Connection -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-emerald-600 px-4 py-3">
+                <h4 class="text-lg font-semibold text-white">Payment Method</h4>
+            </div>
+            <div class="p-4 text-center">
+                {% if is_stripe_connected %}
+                    <div class="bg-green-100 text-green-800 py-2 px-4 rounded-md mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Stripe Connected
+                    </div>
+
+                    <p class="text-sm text-gray-600 mb-3">Account Status:</p>
+                    <div class="flex justify-center space-x-4">
+                        <div class="text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ stripe_account.charges_enabled|yesno:'bg-green-100 text-green-800,bg-red-100 text-red-800' }}">
+                                {{ stripe_account.charges_enabled|yesno:'Charges Enabled,Charges Disabled' }}
+                            </span>
+                        </div>
+                        <div class="text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ stripe_account.payouts_enabled|yesno:'bg-green-100 text-green-800,bg-red-100 text-red-800' }}">
+                                {{ stripe_account.payouts_enabled|yesno:'Payouts Enabled,Payouts Disabled' }}
+                            </span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 mb-4">Connect your Stripe account to receive payments.</p>
+                    <a href="{% url 'connect_stripe' %}" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition inline-flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Connect Stripe Account
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Earnings & Payouts -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="border-b border-gray-200">
+            <ul class="flex flex-wrap -mb-px" id="earningsTab" role="tablist">
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block py-3 px-4 text-emerald-600 border-b-2 border-emerald-600 font-medium text-sm rounded-t-lg active" id="earnings-tab" data-tabs-target="#earnings" type="button" role="tab" aria-controls="earnings" aria-selected="true">Earnings History</button>
+                </li>
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block py-3 px-4 text-gray-600 hover:text-gray-800 font-medium text-sm border-b-2 border-transparent hover:border-gray-300 rounded-t-lg" id="payouts-tab" data-tabs-target="#payouts" type="button" role="tab" aria-controls="payouts" aria-selected="false">Payout History</button>
+                </li>
+            </ul>
+        </div>
+
+        <div id="earningsTabContent">
+            <!-- Earnings Tab -->
+            <div class="block p-4" id="earnings" role="tabpanel" aria-labelledby="earnings-tab">
+                <h5 class="text-lg font-medium text-gray-800 mb-4">Recent Earnings</h5>
+
+                {% if earnings %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for record in earnings %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ record.timestamp|date:"M d, Y" }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">{{ record.description }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold text-emerald-600">${{ record.amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-gray-600 mb-3">No earnings yet.</p>
+                        <p class="text-gray-500 text-sm max-w-md mx-auto">Start creating content to earn money. Your earnings will be based on the popularity and engagement with your content.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Payouts Tab -->
+            <div class="hidden p-4" id="payouts" role="tabpanel" aria-labelledby="payouts-tab">
+                <h5 class="text-lg font-medium text-gray-800 mb-4">Payout History</h5>
+
+                {% if payouts %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for payout in payouts %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.created_at|date:"M d, Y" }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if payout.status == 'paid' %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+                                        {% elif payout.status == 'pending' %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                        {% elif payout.status == 'in_transit' %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">In Transit</span>
+                                        {% else %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold">${{ payout.amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <p class="text-gray-600 mb-3">No payouts yet.</p>
+                        <p class="text-gray-500 text-sm max-w-md mx-auto">Once you've accumulated earnings, they'll be automatically paid out to your connected Stripe account.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab initialization script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabElements = [
+            {
+                id: 'earnings-tab',
+                triggerEl: document.getElementById('earnings-tab'),
+                targetEl: document.getElementById('earnings')
+            },
+            {
+                id: 'payouts-tab',
+                triggerEl: document.getElementById('payouts-tab'),
+                targetEl: document.getElementById('payouts')
+            }
+        ];
+
+        // Use Flowbite's tabs feature if available, otherwise use custom implementation
+        if (typeof window.Flowbite !== 'undefined' && window.Flowbite.Tabs) {
+            const options = {
+                defaultTabId: 'earnings-tab',
+                activeClasses: 'text-emerald-600 border-emerald-600',
+                inactiveClasses: 'text-gray-600 hover:text-gray-800 border-transparent hover:border-gray-300',
+                onShow: () => {}
+            };
+
+            const tabs = new window.Flowbite.Tabs(tabElements, options);
+        } else {
+            // Simple custom tabs implementation as fallback
+            tabElements.forEach(tab => {
+                tab.triggerEl.addEventListener('click', () => {
+                    // Hide all tabs and remove active classes
+                    tabElements.forEach(t => {
+                        t.targetEl.classList.add('hidden');
+                        t.targetEl.classList.remove('block');
+                        t.triggerEl.classList.remove('text-emerald-600', 'border-emerald-600');
+                        t.triggerEl.classList.add('text-gray-600', 'border-transparent');
+                    });
+
+                    // Show the selected tab and add active classes
+                    tab.targetEl.classList.remove('hidden');
+                    tab.targetEl.classList.add('block');
+                    tab.triggerEl.classList.add('text-emerald-600', 'border-emerald-600');
+                    tab.triggerEl.classList.remove('text-gray-600', 'border-transparent');
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

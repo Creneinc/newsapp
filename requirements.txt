@@ -220,3 +220,4 @@ yfinance==0.2.55
 zipp==3.21.0
 zope.interface==7.2
 zstandard==0.23.0
+stripe

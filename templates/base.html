@@ -46,10 +46,24 @@
                 <a href="{% url 'new_article' %}" class="text-sm font-medium {% if request.path == '/new/' %}text-emerald-700 font-bold{% else %}text-gray-700 hover:text-emerald-600{% endif %} transition">Generate</a>
 
                 {% if user.is_authenticated %}
-                    <form method="post" action="{% url 'logout' %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="text-sm font-medium text-red-500 hover:underline bg-transparent border-0 p-0">Logout</button>
-                    </form>
+                    <div class="relative">
+                        <button id="user-dropdown-button" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition flex items-center">
+                            {{ user.username }}
+                            <svg class="w-2.5 h-2.5 ml-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                            </svg>
+                        </button>
+                        <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-10 hidden">
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50">Profile</a>
+                            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50">Dashboard</a>
+                            <a href="{% url 'earnings' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50">Earnings</a>
+                            <div class="border-t border-gray-100"></div>
+                            <form method="post" action="{% url 'logout' %}" class="block">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
+                            </form>
+                        </div>
+                    </div>
                 {% else %}
                     <a href="{% url 'login' %}" class="text-sm font-medium text-emerald-600 hover:underline">Login</a>
                     <a href="{% url 'signup' %}" class="text-sm font-medium text-emerald-600 hover:underline">Sign Up</a>
@@ -124,6 +138,9 @@
         <a href="{% url 'new_article' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">Generate</a>
 
         {% if user.is_authenticated %}
+            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Profile</a>
+            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Dashboard</a>
+            <a href="{% url 'earnings' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Earnings</a>
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit" class="w-full text-left px-4 py-2 text-sm font-semibold rounded-md bg-red-500 text-white hover:bg-red-600">Logout</button>
@@ -179,6 +196,37 @@
           e.stopPropagation();
           const isOpen = mobileMenu.classList.contains("max-h-[1000px]");
           isOpen ? closeMenu() : openMenu();
+        });
+
+        // User dropdown menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userDropdownButton = document.getElementById('user-dropdown-button');
+            const userDropdownMenu = document.getElementById('user-dropdown-menu');
+
+            if (userDropdownButton && userDropdownMenu) {
+                let isDropdownOpen = false;
+
+                userDropdownButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    isDropdownOpen = !isDropdownOpen;
+
+                    if (isDropdownOpen) {
+                        userDropdownMenu.classList.remove('hidden');
+                        document.addEventListener('click', closeDropdownOnOutsideClick);
+                    } else {
+                        userDropdownMenu.classList.add('hidden');
+                        document.removeEventListener('click', closeDropdownOnOutsideClick);
+                    }
+                });
+
+                function closeDropdownOnOutsideClick(e) {
+                    if (!userDropdownMenu.contains(e.target) && !userDropdownButton.contains(e.target)) {
+                        userDropdownMenu.classList.add('hidden');
+                        isDropdownOpen = false;
+                        document.removeEventListener('click', closeDropdownOnOutsideClick);
+                    }
+                }
+            }
         });
       </script>
 </body>

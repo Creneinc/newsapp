@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Creator Dashboard | Crene{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Creator Dashboard</h2>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <!-- Content Stats -->
+        <div class="md:col-span-3">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-emerald-600 px-4 py-3">
+                    <h4 class="text-lg font-semibold text-white">Content Statistics</h4>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="border border-gray-200 rounded-md p-4 h-full">
+                                <h1 class="text-3xl font-bold text-gray-800">{{ total_content }}</h1>
+                                <p class="text-sm text-gray-600">Total Content</p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="border border-gray-200 rounded-md p-4 h-full">
+                                <h1 class="text-3xl font-bold text-gray-800">{{ article_count }}</h1>
+                                <p class="text-sm text-gray-600">Articles</p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="border border-gray-200 rounded-md p-4 h-full">
+                                <h1 class="text-3xl font-bold text-gray-800">{{ image_count }}</h1>
+                                <p class="text-sm text-gray-600">AI Images</p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="border border-gray-200 rounded-md p-4 h-full">
+                                <h1 class="text-3xl font-bold text-gray-800">{{ video_count }}</h1>
+                                <p class="text-sm text-gray-600">AI Videos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Preview (for future implementation) -->
+        <div class="md:col-span-1">
+            <div class="bg-emerald-600 rounded-lg shadow-md overflow-hidden h-full">
+                <div class="p-4 text-center">
+                    <h3 class="text-2xl font-bold text-white">${{ user.profile.content_revenue }}</h3>
+                    <p class="text-white mt-1">Estimated Earnings</p>
+                    <p class="text-xs text-white opacity-80 mt-3">Payment features coming soon!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="border-b border-gray-200">
+            <ul class="flex flex-wrap -mb-px" id="contentTabs" role="tablist">
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block py-3 px-4 text-emerald-600 border-b-2 border-emerald-600 font-medium text-sm rounded-t-lg active" id="articles-tab" data-tabs-target="#articles" type="button" role="tab" aria-controls="articles" aria-selected="true">Articles</button>
+                </li>
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block py-3 px-4 text-gray-600 hover:text-gray-800 font-medium text-sm border-b-2 border-transparent hover:border-gray-300 rounded-t-lg" id="images-tab" data-tabs-target="#images" type="button" role="tab" aria-controls="images" aria-selected="false">AI Images</button>
+                </li>
+                <li role="presentation">
+                    <button class="inline-block py-3 px-4 text-gray-600 hover:text-gray-800 font-medium text-sm border-b-2 border-transparent hover:border-gray-300 rounded-t-lg" id="videos-tab" data-tabs-target="#videos" type="button" role="tab" aria-controls="videos" aria-selected="false">AI Videos</button>
+                </li>
+            </ul>
+        </div>
+        <div class="p-4">
+            <div id="contentTabsContent">
+                <!-- Articles Tab -->
+                <div class="block" id="articles" role="tabpanel" aria-labelledby="articles-tab">
+                    {% if articles %}
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-3 rounded-l-lg">Title</th>
+                                        <th scope="col" class="px-4 py-3">Category</th>
+                                        <th scope="col" class="px-4 py-3">Date Created</th>
+                                        <th scope="col" class="px-4 py-3 rounded-r-lg">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for article in articles %}
+                                    <tr class="bg-white border-b">
+                                        <td class="px-4 py-3"><a href="{% url 'article_detail' article.pk %}" class="text-emerald-600 hover:underline">{{ article.title }}</a></td>
+                                        <td class="px-4 py-3">{{ article.get_category_display }}</td>
+                                        <td class="px-4 py-3">{{ article.created_at|date:"M d, Y" }}</td>
+                                        <td class="px-4 py-3 flex space-x-2">
+                                            <a href="{% url 'edit_article' article.pk %}" class="px-3 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded hover:bg-gray-300 transition">Edit</a>
+                                            <a href="{% url 'delete_article' article.pk %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-600 mb-4">You haven't created any articles yet.</p>
+                            <a href="{% url 'new_article' %}" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition">Create Your First Article</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Images Tab -->
+                <div class="hidden" id="images" role="tabpanel" aria-labelledby="images-tab">
+                    {% if images %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for image in images %}
+                                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden h-full">
+                                    <a href="{% url 'ai_image_detail' image.pk %}">
+                                        <img src="{{ image.image.url }}" class="w-full h-48 object-cover" alt="{{ image.title }}">
+                                    </a>
+                                    <div class="p-3">
+                                        <h5 class="text-md font-medium text-gray-800">{{ image.title }}</h5>
+                                        <p class="text-xs text-gray-500 mt-1">{{ image.generated_at|date:"M d, Y" }}</p>
+                                    </div>
+                                    <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
+                                        <a href="{% url 'delete_ai_image' image.pk %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-600 mb-4">You haven't uploaded any AI images yet.</p>
+                            <a href="{% url 'ai_image_gallery' %}" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition">Upload AI Images</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Videos Tab -->
+                <div class="hidden" id="videos" role="tabpanel" aria-labelledby="videos-tab">
+                    {% if videos %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {% for video in videos %}
+                                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden h-full">
+                                    <div class="p-3">
+                                        <video class="w-full h-56 object-cover rounded-md" controls>
+                                            <source src="{{ video.video.url }}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <h5 class="text-md font-medium text-gray-800 mt-2">{{ video.title }}</h5>
+                                        <p class="text-xs text-gray-500 mt-1">{{ video.generated_at|date:"M d, Y" }}</p>
+                                    </div>
+                                    <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
+                                        <div class="flex space-x-2">
+                                            <a href="{% url 'ai_video_detail' video.pk %}" class="px-3 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded hover:bg-gray-300 transition">View</a>
+                                            <a href="{% url 'delete_ai_video' video.pk %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-600 mb-4">You haven't uploaded any AI videos yet.</p>
+                            <a href="{% url 'ai_video_gallery' %}" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition">Upload AI Videos</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize tabs from Flowbite -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabElements = [
+            {
+                id: 'articles-tab',
+                triggerEl: document.getElementById('articles-tab'),
+                targetEl: document.getElementById('articles')
+            },
+            {
+                id: 'images-tab',
+                triggerEl: document.getElementById('images-tab'),
+                targetEl: document.getElementById('images')
+            },
+            {
+                id: 'videos-tab',
+                triggerEl: document.getElementById('videos-tab'),
+                targetEl: document.getElementById('videos')
+            }
+        ];
+
+        // Use Flowbite's tabs feature if available, otherwise use custom implementation
+        if (typeof window.Flowbite !== 'undefined' && window.Flowbite.Tabs) {
+            const options = {
+                defaultTabId: 'articles-tab',
+                activeClasses: 'text-emerald-600 border-emerald-600',
+                inactiveClasses: 'text-gray-600 hover:text-gray-800 border-transparent hover:border-gray-300',
+                onShow: () => {}
+            };
+
+            const tabs = new window.Flowbite.Tabs(tabElements, options);
+        } else {
+            // Simple custom tabs implementation as fallback
+            tabElements.forEach(tab => {
+                tab.triggerEl.addEventListener('click', () => {
+                    // Hide all tabs and remove active classes
+                    tabElements.forEach(t => {
+                        t.targetEl.classList.add('hidden');
+                        t.targetEl.classList.remove('block');
+                        t.triggerEl.classList.remove('text-emerald-600', 'border-emerald-600');
+                        t.triggerEl.classList.add('text-gray-600', 'border-transparent');
+                    });
+
+                    // Show the selected tab and add active classes
+                    tab.targetEl.classList.remove('hidden');
+                    tab.targetEl.classList.add('block');
+                    tab.triggerEl.classList.add('text-emerald-600', 'border-emerald-600');
+                    tab.triggerEl.classList.remove('text-gray-600', 'border-transparent');
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile | Crene{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Profile Information -->
+        <div class="md:col-span-1">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-emerald-600 px-4 py-3">
+                    <h4 class="text-lg font-semibold text-white">{{ profile_user.username }}</h4>
+                </div>
+                <div class="p-4 text-center">
+                    {% if profile_user.profile.profile_picture %}
+                        <img src="{{ profile_user.profile.profile_picture.url }}" class="rounded-full w-32 h-32 object-cover mx-auto mb-4" alt="{{ profile_user.username }}">
+                    {% else %}
+                        <img src="{% static 'images/default_profile.png' %}" class="rounded-full w-32 h-32 object-cover mx-auto mb-4" alt="{{ profile_user.username }}">
+                    {% endif %}
+
+                    <h5 class="text-lg font-medium text-gray-800">{{ profile_user.first_name }} {{ profile_user.last_name }}</h5>
+
+                    {% if profile_user.profile.bio %}
+                        <p class="mt-4 text-gray-700">{{ profile_user.profile.bio }}</p>
+                    {% endif %}
+
+                    {% if profile_user.profile.website %}
+                        <p class="mt-2"><a href="{{ profile_user.profile.website }}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:underline">{{ profile_user.profile.website }}</a></p>
+                    {% endif %}
+
+                    <p class="mt-3 text-sm text-gray-500">Joined: {{ profile_user.date_joined|date:"F j, Y" }}</p>
+                </div>
+                <div class="bg-gray-100 px-4 py-3">
+                    <div class="grid grid-cols-3 text-center">
+                        <div>
+                            <h5 class="text-lg font-bold text-gray-800">{{ profile_user.profile.total_articles }}</h5>
+                            <p class="text-sm text-gray-600">Articles</p>
+                        </div>
+                        <div>
+                            <h5 class="text-lg font-bold text-gray-800">{{ profile_user.profile.total_images }}</h5>
+                            <p class="text-sm text-gray-600">Images</p>
+                        </div>
+                        <div>
+                            <h5 class="text-lg font-bold text-gray-800">{{ profile_user.profile.total_videos }}</h5>
+                            <p class="text-sm text-gray-600">Videos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Content -->
+        <div class="md:col-span-2">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-emerald-600 px-4 py-3">
+                    <h4 class="text-lg font-semibold text-white">Creator Content</h4>
+                </div>
+
+                <!-- Articles -->
+                <div class="p-4">
+                    <h5 class="text-lg font-medium text-gray-800 border-b border-gray-200 pb-2 mb-4">Articles</h5>
+                    {% if articles %}
+                        <div class="space-y-2">
+                            {% for article in articles %}
+                                <a href="{% url 'article_detail' article.pk %}" class="block p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition">
+                                    <div class="flex justify-between">
+                                        <h6 class="font-medium text-gray-800">{{ article.title }}</h6>
+                                        <span class="text-sm text-gray-500">{{ article.created_at|date:"M d, Y" }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600">{{ article.category }}</p>
+                                </a>
+                            {% endfor %}
+                        </div>
+
+                        {% if profile_user.profile.total_articles > 10 %}
+                            <div class="text-center mt-4">
+                                <p class="text-sm text-gray-600">Showing 10 of {{ profile_user.profile.total_articles }} articles</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-center py-4 text-gray-600">No articles yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- AI Images -->
+                <div class="p-4 border-t border-gray-200">
+                    <h5 class="text-lg font-medium text-gray-800 border-b border-gray-200 pb-2 mb-4">AI Images</h5>
+                    {% if images %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {% for image in images %}
+                                <div>
+                                    <a href="{% url 'ai_image_detail' image.pk %}">
+                                        <img src="{{ image.image.url }}" class="w-full h-36 object-cover rounded-md" alt="{{ image.title }}">
+                                        <p class="mt-1 text-sm text-gray-800 truncate">{{ image.title }}</p>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if profile_user.profile.total_images > 6 %}
+                            <div class="text-center mt-4">
+                                <p class="text-sm text-gray-600">Showing 6 of {{ profile_user.profile.total_images }} images</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-center py-4 text-gray-600">No AI images yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- AI Videos -->
+                <div class="p-4 border-t border-gray-200">
+                    <h5 class="text-lg font-medium text-gray-800 border-b border-gray-200 pb-2 mb-4">AI Videos</h5>
+                    {% if videos %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {% for video in videos %}
+                                <div>
+                                    <a href="{% url 'ai_video_detail' video.pk %}">
+                                        <video class="w-full h-48 object-cover rounded-md" controls>
+                                            <source src="{{ video.video.url }}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <p class="mt-1 text-sm text-gray-800 truncate">{{ video.title }}</p>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if profile_user.profile.total_videos > 4 %}
+                            <div class="text-center mt-4">
+                                <p class="text-sm text-gray-600">Showing 4 of {{ profile_user.profile.total_videos }} videos</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-center py-4 text-gray-600">No AI videos yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

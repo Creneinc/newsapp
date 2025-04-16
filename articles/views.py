@@ -269,7 +269,7 @@ def article_detail(request, pk):
         'form': form,
         'categories': CATEGORIES,
     })
-
+    
 # 🖼 Upload AI Image
 @login_required
 def upload_image(request):
@@ -431,3 +431,4 @@ def delete_ai_video(request, pk):
     else:
         messages.error(request, '⚠️ You are not authorized to delete this video.')
     return redirect('ai_video_gallery')
+

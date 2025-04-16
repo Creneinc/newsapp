@@ -21,6 +21,7 @@ urlpatterns = [
     path('accounts/', include(auth_patterns)),  # Use our custom auth patterns
     path('signup/', signup_view, name='signup'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/', http_method_names=['get', 'post']), name='logout'),
+    path('users/', include('users.urls')),
 ]
 
 if settings.DEBUG:

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class Article(models.Model):
     CATEGORY_CHOICES = [
@@ -62,3 +63,20 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+class ArticleView(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='views')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='article_views')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        # Optional - prevents the same user or IP from inflating view count within a timeframe
+        unique_together = [['article', 'user', 'ip_address', 'timestamp']]
+        indexes = [
+            models.Index(fields=['timestamp']),  # For efficient date range queries
+            models.Index(fields=['article', 'timestamp']),  # For article-specific date queries
+        ]
+
+    def __str__(self):
+        return f"View of {self.article.title} at {self.timestamp}"

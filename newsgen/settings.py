@@ -20,7 +20,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'articles',
     'widget_tweaks',
-    'storages',  # ✅ Added for S3
+    'users.apps.UsersConfig',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -111,3 +112,7 @@ except ImportError:
     pass
 
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_CONNECT_CLIENT_ID = os.environ.get('STRIPE_CONNECT_CLIENT_ID')

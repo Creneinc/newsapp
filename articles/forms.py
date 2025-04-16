@@ -47,3 +47,4 @@ class AIVideoForm(forms.ModelForm):
     class Meta:
         model = AIVideo
         fields = ['video', 'prompt_used']
+
