@@ -27,4 +27,6 @@ urlpatterns = [
     path('ai-images/delete/<int:pk>/', views.delete_ai_image, name='delete_ai_image'),
     path('ai-videos/delete/<int:pk>/', views.delete_ai_video, name='delete_ai_video'),
     path('check-article-status/', views.check_article_status, name='check_article_status'),
+    path('ai-images/<int:pk>/comment/', views.add_image_comment, name='add_image_comment'),
+    path('ai-videos/<int:pk>/comment/', views.add_video_comment, name='add_video_comment'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

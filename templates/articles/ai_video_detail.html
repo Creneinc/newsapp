@@ -17,7 +17,10 @@
         {{ video.title|default:"Untitled AI Video" }}
       </h1>
       <p class="text-sm text-gray-500 mb-4">
-        Uploaded on {{ video.generated_at|date:"F j, Y" }}
+        Uploaded on {{ video.generated_at|date:"F j, Y" }} by
+        <a href="{% url 'public_profile' video.user.username %}" class="text-emerald-600 hover:underline">
+          {{ video.user.username }}
+        </a>
       </p>
 
       {% if video.prompt_used %}
@@ -27,6 +30,68 @@
       {% else %}
         <p class="italic text-gray-400">No description provided.</p>
       {% endif %}
+
+      <!-- Delete Button (Only for the creator) -->
+      {% if video.user == user %}
+      <div class="mt-6">
+        <form action="{% url 'delete_ai_video' video.pk %}" method="post" onsubmit="return confirm('Are you sure you want to delete this video?');">
+          {% csrf_token %}
+          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+            🗑 Delete Video
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Back to gallery link -->
+      <a href="{% url 'ai_video_gallery' %}" class="block mt-6 text-emerald-600 hover:underline">
+        ⬅ Back to AI Video Gallery
+      </a>
+    </div>
+  </div>
+
+  <!-- Comment Section -->
+  <div class="mt-8 bg-white shadow-lg rounded-xl overflow-hidden">
+    <div class="p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Comments</h3>
+
+      <!-- Comment Form -->
+      {% if user.is_authenticated %}
+      <form method="POST" action="{% url 'add_video_comment' video.pk %}" class="mb-6">
+        {% csrf_token %}
+        <textarea
+          name="content"
+          rows="3"
+          class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          placeholder="Add your comment..."></textarea>
+        <button type="submit" class="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition">
+          Post Comment
+        </button>
+      </form>
+      {% else %}
+      <div class="bg-gray-50 p-4 rounded-md mb-6">
+        <p class="text-center text-gray-600">
+          <a href="{% url 'login' %}" class="text-emerald-600 hover:underline">Log in</a> to leave a comment.
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Comments List -->
+      <div class="space-y-4">
+        {% for comment in comments %}
+          <div class="border-l-4 border-emerald-500 pl-4 py-2">
+            <div class="flex items-center mb-1">
+              <a href="{% url 'public_profile' comment.user.username %}" class="font-medium text-gray-800 hover:text-emerald-600">
+                {{ comment.user.username }}
+              </a>
+              <span class="text-xs text-gray-500 ml-2">{{ comment.created_at|date:"M d, Y" }}</span>
+            </div>
+            <p class="text-gray-700">{{ comment.content }}</p>
+          </div>
+        {% empty %}
+          <p class="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
+        {% endfor %}
+      </div>
     </div>
   </div>
 </div>

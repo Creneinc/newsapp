@@ -45,6 +45,12 @@
                 <!-- Nav Links -->
                 <a href="{% url 'new_article' %}" class="text-sm font-medium {% if request.path == '/new/' %}text-emerald-700 font-bold{% else %}text-gray-700 hover:text-emerald-600{% endif %} transition">Generate</a>
 
+                <!-- Gold Monetize Link -->
+                <a href="{% if user.is_authenticated %}{% url 'earnings' %}{% else %}{% url 'signup' %}{% endif %}"
+                class="text-sm font-medium text-yellow-600 hover:text-yellow-700 transition">
+                Monetize
+                </a>
+
                 {% if user.is_authenticated %}
                     <div class="relative">
                         <button id="user-dropdown-button" class="text-sm font-medium text-gray-700 hover:text-emerald-600 transition flex items-center">
@@ -136,6 +142,12 @@
         </a>
 
         <a href="{% url 'new_article' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">Generate</a>
+
+        <!-- Gold Monetize Button -->
+        <a href="{% if user.is_authenticated %}{% url 'earnings' %}{% else %}{% url 'signup' %}{% endif %}"
+        class="block px-4 py-2 text-sm font-semibold rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">
+        Monetize
+        </a>
 
         {% if user.is_authenticated %}
             <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Profile</a>

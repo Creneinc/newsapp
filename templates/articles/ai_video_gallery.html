@@ -10,11 +10,20 @@
         <a href="{% url 'ai_video_detail' video.pk %}" class="block">
           <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
 
-            <!-- Video preview -->
-            <video controls class="w-full h-48 object-cover bg-gray-100">
-              <source src="{{ video.video.url }}" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
+            <!-- Video preview with dynamic thumbnail -->
+            <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
+              <!-- Canvas for thumbnail -->
+              <canvas class="w-full h-48 object-cover bg-gray-100"></canvas>
+
+              <!-- Play button overlay -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="bg-black bg-opacity-30 rounded-full p-3">
+                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
 
             <!-- Info -->
             <div class="p-4">
@@ -26,9 +35,11 @@
                 <p class="text-sm text-gray-600 line-clamp-2">{{ video.prompt_used }}</p>
               {% endif %}
 
-              <div class="text-xs text-gray-500 mt-2 flex items-center justify-between">
-                <span>{{ video.generated_at|date:"M d, Y" }}</span>
-                <span class="text-emerald-500">🧠 AIgen</span>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
+                <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                  By {{ video.user.username }}
+                </a>
               </div>
             </div>
           </div>
@@ -68,5 +79,61 @@
     </div>
   {% endif %}
 </div>
+
+<!-- Script for generating video thumbnails -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Get all video thumbnail containers
+  const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
+
+  // Process each container
+  thumbnailContainers.forEach(container => {
+    const videoUrl = container.dataset.videoUrl;
+    const canvas = container.querySelector('canvas');
+    const context = canvas.getContext('2d');
+
+    // Create temporary video element
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.src = videoUrl + '#t=1.0'; // Seek to 1 second
+
+    // Set canvas dimensions
+    canvas.width = 320;
+    canvas.height = 180;
+
+    // Once video can play, capture the frame
+    video.addEventListener('loadeddata', function() {
+      // Try to seek to a specific time
+      video.currentTime = 1.0; // 1 second in
+    });
+
+    video.addEventListener('seeked', function() {
+      // Draw the video frame on the canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Clean up
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    });
+
+    // Handle errors - fill with gradient if thumbnail fails
+    video.addEventListener('error', function() {
+      // Create gradient background as fallback
+      const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#10b981');  // emerald-500
+      gradient.addColorStop(1, '#047857');  // emerald-700
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Add video text
+      context.font = '24px Arial';
+      context.fillStyle = 'white';
+      context.textAlign = 'center';
+      context.fillText('AI Video', canvas.width/2, canvas.height/2);
+    });
+  });
+});
+</script>
 
 {% endblock %}

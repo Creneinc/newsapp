@@ -7,7 +7,14 @@
 
     <!-- 📰 Article Title -->
     <h1 class="text-4xl font-bold text-gray-900 leading-tight">{{ article.title }}</h1>
-    <p class="text-sm text-gray-500 mt-2">Published on {{ article.created_at|date:"F d, Y" }} by {{ article.user.username }}</p>
+
+    <!-- Author info with link to public profile -->
+    <p class="text-sm text-gray-500 mt-2">
+        Published on {{ article.created_at|date:"F d, Y" }} by
+        <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+            {{ article.user.username }}
+        </a>
+    </p>
 
     <!-- 📸 Featured Image -->
     {% if article.image %}
@@ -64,7 +71,9 @@
             {% for comment in comments %}
                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-500">
                     <div class="mb-3">
-                        <p class="font-semibold text-gray-800">{{ comment.user.username }}</p>
+                        <a href="{% url 'public_profile' comment.user.username %}" class="font-semibold text-gray-800 hover:text-emerald-600">
+                            {{ comment.user.username }}
+                        </a>
                         <p class="text-sm text-gray-500">{{ comment.created_at|date:"F d, Y" }}</p>
                     </div>
                     <p class="text-gray-600">{{ comment.content }}</p>

@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
-from .models import Article, Comment, AIImage, AIVideo
+from .models import Article, Comment, AIImage, AIVideo, ImageComment
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
 from django.template.loader import render_to_string
@@ -269,7 +269,7 @@ def article_detail(request, pk):
         'form': form,
         'categories': CATEGORIES,
     })
-    
+
 # 🖼 Upload AI Image
 @login_required
 def upload_image(request):
@@ -400,15 +400,21 @@ def search_results(request):
 
 def ai_image_detail(request, pk):
     image = get_object_or_404(AIImage, pk=pk)
+    # Make sure to query the comments
+    comments = ImageComment.objects.filter(image=image).order_by('-created_at')
+
     return render(request, 'articles/ai_image_detail.html', {
         'image': image,
-        'categories': CATEGORIES
+        'comments': comments,  # Pass comments to the template
+        'categories': CATEGORIES,
     })
 
 def ai_video_detail(request, pk):
     video = get_object_or_404(AIVideo, pk=pk)
+    comments = video.comments.all()  # Get all comments
     return render(request, 'articles/ai_video_detail.html', {
         'video': video,
+        'comments': comments,
         'categories': CATEGORIES
     })
 
@@ -432,3 +438,39 @@ def delete_ai_video(request, pk):
         messages.error(request, '⚠️ You are not authorized to delete this video.')
     return redirect('ai_video_gallery')
 
+@login_required
+def add_image_comment(request, pk):
+    image = get_object_or_404(AIImage, pk=pk)
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            ImageComment.objects.create(
+                image=image,
+                user=request.user,
+                content=content
+            )
+            messages.success(request, "Your comment has been added!")
+    return redirect('ai_image_detail', pk=image.pk)
+
+def ai_image_detail(request, pk):
+    image = get_object_or_404(AIImage, pk=pk)
+    comments = image.comments.all()  # Get all comments
+    return render(request, 'articles/ai_image_detail.html', {
+        'image': image,
+        'comments': comments,
+        'categories': CATEGORIES
+    })
+
+@login_required
+def add_video_comment(request, pk):
+    video = get_object_or_404(AIVideo, pk=pk)
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            VideoComment.objects.create(
+                video=video,
+                user=request.user,
+                content=content
+            )
+            messages.success(request, "Your comment has been added!")
+    return redirect('ai_video_detail', pk=video.pk)

@@ -15,9 +15,11 @@
               {% if image.prompt_used %}
                 <p class="text-sm text-gray-600 line-clamp-2">{{ image.prompt_used }}</p>
               {% endif %}
-              <div class="text-xs text-gray-500 mt-2 flex items-center justify-between">
-                <span>{{ image.generated_at|date:"M d, Y" }}</span>
-                <span class="text-emerald-500">🧠 AIgen</span>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
+                <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                  By {{ image.user.username }}
+                </a>
               </div>
             </div>
           </div>
