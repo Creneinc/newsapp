@@ -125,39 +125,51 @@ def create_article(request):
                 body="⏳ Generating article..."
             )
 
-            # Make sure we're using the model we've pulled
             try:
                 logger.info("Sending request to Mistral API...")
 
+                # Create the prompt
+                prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
+                if summary:
+                    prompt += f"Summary: {summary}\n"
+                prompt += "\nOnly write the body of the article. Do not include the title."
+
+                # OPTION 1: Use stream=False (simpler approach)
                 response = requests.post(
                     f"{OLLAMA_API_URL}/api/generate",
                     headers={"Content-Type": "application/json"},
                     json={
-                        "model": "mistral",  # Use the model you've pulled
-                        "prompt": f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n{f'Summary: {summary}' if summary else ''}\n\nOnly write the body of the article. Do not include the title.",
-                        "stream": True
+                        "model": "mistral",
+                        "prompt": prompt,
+                        "stream": False
                     },
-                    timeout=600  # Set a reasonable timeout (10 minutes)
+                    timeout=600
                 )
 
                 logger.info(f"Mistral API responded with status code {response.status_code}")
 
                 if response.status_code == 200:
-                    result = response.json()
-                    article_content = result.get("response", "")
+                    try:
+                        result = response.json()
+                        article_content = result.get("response", "")
 
-                    # Update the article with the generated content
-                    if len(article_content.strip()) > 50:
-                        article.body = article_content.strip()
-                        article.save()
-                        return JsonResponse({
-                            'status': 'success',
-                            'message': 'Article created successfully!',
-                            'article_id': article.id
-                        })
-                    else:
-                        logger.warning("Mistral returned content that was too short.")
-                        article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
+                        # Update the article with the generated content
+                        if len(article_content.strip()) > 50:
+                            article.body = article_content.strip()
+                            article.save()
+                            return JsonResponse({
+                                'status': 'success',
+                                'message': 'Article created successfully!',
+                                'article_id': article.id
+                            })
+                        else:
+                            logger.warning("Mistral returned content that was too short.")
+                            article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
+                            article.save()
+                    except ValueError as e:
+                        logger.error(f"Error parsing Mistral response as JSON: {e}")
+                        logger.error(f"Raw response: {response.text}")
+                        article.body = f"Error processing AI response: {str(e)}\n\n{summary}"
                         article.save()
                 else:
                     logger.error(f"Mistral API error: {response.status_code} - {response.text}")
