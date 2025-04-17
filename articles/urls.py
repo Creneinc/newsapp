@@ -4,8 +4,7 @@ from django.conf.urls.static import static
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 from . import views
-from articles.views import signup_view, CATEGORIES
-from articles.views import search_results, ai_image_detail, ai_video_detail
+from articles.views import search_results, ai_image_detail, ai_video_detail, signup_view
 from articles import views
 
 urlpatterns = [
@@ -29,4 +28,6 @@ urlpatterns = [
     path('check-article-status/', views.check_article_status, name='check_article_status'),
     path('ai-images/<int:pk>/comment/', views.add_image_comment, name='add_image_comment'),
     path('ai-videos/<int:pk>/comment/', views.add_video_comment, name='add_video_comment'),
+    path('article/<int:pk>/approve/', views.approve_article, name='approve_article'),
+    path('article/<int:pk>/reject/', views.reject_article, name='reject_article'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

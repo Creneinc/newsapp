@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
-from .models import Article, Comment, AIImage, AIVideo, ImageComment
+from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
 from django.template.loader import render_to_string
@@ -17,10 +17,12 @@ import json
 import logging
 import time
 import os
+from articles.models import get_category_dict
 
 logger = logging.getLogger(__name__)
 
-CATEGORIES = dict(Article.CATEGORY_CHOICES)
+CATEGORIES = get_category_dict()
+
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 
 # 🔐 User Signup
@@ -227,6 +229,27 @@ def check_article_status(request):
 
 # 🌍 Homepage: Article List with Optional Category Filter
 def article_list(request):
+    # Get popular articles
+    popular_articles = Article.objects.filter(moderation_status='approved').order_by('-view_count', '-created_at')[:4]
+
+    # Get recommended articles for authenticated users
+    if request.user.is_authenticated:
+        recommended_articles = Article.objects.filter(
+            moderation_status='approved',
+        )
+
+        # Check if the user has favorite_categories attribute
+        if hasattr(request.user, 'favorite_categories') and request.user.favorite_categories.exists():
+            recommended_articles = recommended_articles.filter(
+                category__in=request.user.favorite_categories.all()
+            )
+
+        # Exclude articles already in popular_articles
+        popular_ids = [a.id for a in popular_articles]
+        recommended_articles = recommended_articles.exclude(id__in=popular_ids).order_by('-created_at')[:4]
+    else:
+        recommended_articles = []
+
     category = request.GET.get('category', 'All')
     search_query = request.GET.get('search', '')
 
@@ -249,6 +272,11 @@ def article_list(request):
 # 🔎 Article Detail + Comments
 def article_detail(request, pk):
     article = get_object_or_404(Article, pk=pk)
+
+    # Increment view count
+    article.view_count += 1
+    article.save(update_fields=['view_count'])
+
     comments = article.comments.all()
 
     if request.method == 'POST' and request.user.is_authenticated:
@@ -474,3 +502,31 @@ def add_video_comment(request, pk):
             )
             messages.success(request, "Your comment has been added!")
     return redirect('ai_video_detail', pk=video.pk)
+
+@login_required
+def approve_article(request, pk):
+    # Only staff can approve articles
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to approve articles.")
+        return redirect('article_list')
+
+    article = get_object_or_404(Article, pk=pk)
+    article.moderation_status = 'approved'
+    article.save()
+
+    messages.success(request, f"Article '{article.title}' has been approved.")
+    return redirect('article_detail', pk=pk)
+
+@login_required
+def reject_article(request, pk):
+    # Only staff can reject articles
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to reject articles.")
+        return redirect('article_list')
+
+    article = get_object_or_404(Article, pk=pk)
+    article.moderation_status = 'rejected'
+    article.save()
+
+    messages.success(request, f"Article '{article.title}' has been rejected.")
+    return redirect('article_detail', pk=pk)
