@@ -1,22 +1,14 @@
-
 {% extends 'base.html' %}
 {% block title %}Crene - The Future of News{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-6 py-2">
+<div class="max-w-7xl mx-auto px-4 py-4">
 
-    <!-- 🚀 Popular & Recommended Section -->
+    <!-- 🚀 Trending Now -->
+    {% if popular_articles %}
     <div class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-900">Trending Now</h2>
-            <div class="flex space-x-2">
-                <button id="trending-btn" class="bg-emerald-600 text-white px-3 py-1 rounded text-sm font-medium">Most Popular</button>
-                <button id="recommended-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-medium">Recommended For You</button>
-            </div>
-        </div>
-
-        <!-- Popular Articles Carousel -->
-        <div id="popular-articles" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Trending Now</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in popular_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
                 {% if article.image %}
@@ -35,15 +27,16 @@
                     </div>
                 </div>
             </div>
-            {% empty %}
-            <div class="col-span-4 text-center py-4 text-gray-500">
-                No trending articles yet.
-            </div>
             {% endfor %}
         </div>
+    </div>
+    {% endif %}
 
-        <!-- Recommended Articles (Hidden by Default) -->
-        <div id="recommended-articles" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- 💡 Recommended Articles -->
+    {% if user.is_authenticated and recommended_articles %}
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Recommended For You</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in recommended_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
                 {% if article.image %}
@@ -61,79 +54,67 @@
                     </div>
                 </div>
             </div>
-            {% empty %}
-            <div class="col-span-4 text-center py-4 text-gray-500">
-                Log in to see personalized recommendations.
-            </div>
             {% endfor %}
         </div>
     </div>
+    {% endif %}
 
-    <!-- 📰 Main News Section -->
+    <!-- 🌟 Featured Article -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <!-- 🌟 Featured Article (Largest) -->
         <div class="md:col-span-2 bg-white shadow-lg rounded-lg overflow-hidden">
             {% if articles %}
-                <div class="p-6">
-                    {% if articles.0.moderation_status == 'approved' or user.is_staff %}
-                        {% if articles.0.category == "AI Image" %}
-                            <!-- 🧠 AI Generated Image Display -->
-                            <img src="{{ articles.0.image.url }}" class="w-full h-96 object-contain rounded-lg bg-gray-100" alt="{{ articles.0.title }}">
-                            <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-lg italic">AI-generated image description:</p>
-                            <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
-
-                        {% elif articles.0.category == "AI Video" %}
-                            <!-- 🎥 AI Generated Video Embed -->
-                            <video controls class="w-full rounded-lg bg-black h-96 mt-2">
-                                <source src="{{ articles.0.video.url }}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                            <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-lg italic">AI-generated video description:</p>
-                            <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
-
-                        {% else %}
-                            <!-- 📰 Standard News -->
-                            {% if articles.0.image %}
-                                <img src="{{ articles.0.image.url }}" class="w-full h-64 object-cover object-center rounded-lg" alt="{{ articles.0.title }}">
-                            {% endif %}
-                            <h2 class="text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-lg">{{ articles.0.body|linebreaksbr }}</p>
-                        {% endif %}
-
-                        {% if articles.0.moderation_status == 'pending' and user.is_staff %}
-                            <div class="mt-2 bg-yellow-100 text-yellow-800 p-2 rounded">
-                                <p class="font-medium">Moderation: Pending Review</p>
-                                <div class="flex mt-1">
-                                    <a href="{% url 'approve_article' articles.0.pk %}" class="bg-green-500 text-white px-2 py-1 rounded text-xs mr-2">Approve</a>
-                                    <a href="{% url 'reject_article' articles.0.pk %}" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Reject</a>
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        <div class="mt-4 text-sm text-gray-500">
-                            🕒 {{ articles.0.created_at|date:"M d, Y" }} · ✍️
-                            <a href="{% url 'public_profile' articles.0.user.username %}" class="text-emerald-600 hover:underline">
-                                {{ articles.0.user.username }}
-                            </a>
-                            <span class="ml-2">👁️ {{ articles.0.views }} views</span>
-                        </div>
-                        <a href="{% url 'article_detail' articles.0.pk %}"
-                           class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
-                            Read More →
-                        </a>
+            <div class="p-6">
+                {% with article=articles.0 %}
+                {% if article.moderation_status == 'approved' or user.is_staff %}
+                    {% if article.category == "AI Image" %}
+                        <img src="{{ article.image.url }}" class="w-full h-96 object-contain bg-gray-100 rounded-lg" alt="{{ article.title }}">
+                        <h2 class="text-3xl font-bold mt-4">{{ article.title }}</h2>
+                        <p class="text-gray-600 mt-2 italic">AI-generated image description:</p>
+                        <p class="text-gray-700">{{ article.body|linebreaksbr }}</p>
+                    {% elif article.category == "AI Video" %}
+                        <video controls class="w-full h-96 bg-black rounded-lg mt-2">
+                            <source src="{{ article.video.url }}" type="video/mp4">
+                        </video>
+                        <h2 class="text-3xl font-bold mt-4">{{ article.title }}</h2>
+                        <p class="text-gray-600 mt-2 italic">AI-generated video description:</p>
+                        <p class="text-gray-700">{{ article.body|linebreaksbr }}</p>
                     {% else %}
-                        <div class="p-6 text-center">
-                            <p class="text-gray-500">This article is pending moderation review.</p>
+                        {% if article.image %}
+                            <img src="{{ article.image.url }}" class="w-full h-64 object-cover rounded-lg" alt="{{ article.title }}">
+                        {% endif %}
+                        <h2 class="text-3xl font-bold mt-4">{{ article.title }}</h2>
+                        <p class="text-gray-700 mt-2">{{ article.body|linebreaksbr }}</p>
+                    {% endif %}
+
+                    {% if article.moderation_status == 'pending' and user.is_staff %}
+                        <div class="mt-2 bg-yellow-100 text-yellow-800 p-2 rounded">
+                            <p class="font-medium">Moderation: Pending Review</p>
+                            <div class="flex mt-1">
+                                <a href="{% url 'approve_article' article.pk %}" class="bg-green-500 text-white px-2 py-1 rounded text-xs mr-2">Approve</a>
+                                <a href="{% url 'reject_article' article.pk %}" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Reject</a>
+                            </div>
                         </div>
                     {% endif %}
-                </div>
+
+                    <div class="mt-4 text-sm text-gray-500">
+                        🕒 {{ article.created_at|date:"M d, Y" }} · ✍️
+                        <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+                            {{ article.user.username }}
+                        </a>
+                        <span class="ml-2">👁️ {{ article.views }} views</span>
+                    </div>
+                    <a href="{% url 'article_detail' article.pk %}" class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
+                        Read More →
+                    </a>
+                {% else %}
+                    <p class="text-center text-gray-500">This article is pending moderation review.</p>
+                {% endif %}
+                {% endwith %}
+            </div>
             {% endif %}
         </div>
 
-        <!-- 📰 Sidebar: Latest News -->
+        <!-- 📰 Sidebar Latest -->
         <div class="bg-white shadow-lg rounded-lg p-4">
             <h3 class="text-xl font-bold text-gray-900">Latest News</h3>
             <ul class="mt-2 space-y-3">
@@ -148,7 +129,6 @@
                         <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
                             {{ article.user.username }}
                         </a>
-
                         {% if article.moderation_status == 'pending' and user.is_staff %}
                         <span class="bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded text-xs ml-1">Pending</span>
                         {% endif %}
@@ -183,7 +163,6 @@
             {% elif article.category == "AI Video" %}
                 <video controls class="w-full h-48 bg-black">
                     <source src="{{ article.video.url }}" type="video/mp4">
-                    Your browser does not support the video tag.
                 </video>
             {% elif article.image %}
                 <img src="{{ article.image.url }}" class="w-full h-40 object-cover object-center" alt="{{ article.title }}">
@@ -227,38 +206,7 @@
     </div>
 
     {% if not articles %}
-        <p class="text-gray-500 mt-6 text-center">No articles yet. Start writing!</p>
+    <p class="text-gray-500 mt-6 text-center">No articles yet. Start writing!</p>
     {% endif %}
-
 </div>
-
-<!-- JavaScript for Tab Switching -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const trendingBtn = document.getElementById('trending-btn');
-        const recommendedBtn = document.getElementById('recommended-btn');
-        const popularArticles = document.getElementById('popular-articles');
-        const recommendedArticles = document.getElementById('recommended-articles');
-
-        trendingBtn.addEventListener('click', function() {
-            trendingBtn.classList.remove('bg-gray-200', 'text-gray-700');
-            trendingBtn.classList.add('bg-emerald-600', 'text-white');
-            recommendedBtn.classList.remove('bg-emerald-600', 'text-white');
-            recommendedBtn.classList.add('bg-gray-200', 'text-gray-700');
-
-            popularArticles.classList.remove('hidden');
-            recommendedArticles.classList.add('hidden');
-        });
-
-        recommendedBtn.addEventListener('click', function() {
-            recommendedBtn.classList.remove('bg-gray-200', 'text-gray-700');
-            recommendedBtn.classList.add('bg-emerald-600', 'text-white');
-            trendingBtn.classList.remove('bg-emerald-600', 'text-white');
-            trendingBtn.classList.add('bg-gray-200', 'text-gray-700');
-
-            recommendedArticles.classList.remove('hidden');
-            popularArticles.classList.add('hidden');
-        });
-    });
-</script>
 {% endblock %}
