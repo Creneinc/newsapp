@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib import messages
@@ -17,6 +18,8 @@ from articles.tasks import generate_article_task
 from django.template.loader import render_to_string
 from celery.result import AsyncResult
 from uuid import uuid4
+from django.utils.timezone import now
+from datetime import timedelta
 import requests
 import json
 import logging
@@ -658,21 +661,53 @@ def like_article(request, pk):
         return JsonResponse({'status': 'error', 'message': 'Article not found'}, status=404)
 
 @login_required
-def like_ai_video(request, pk):
+def like_ai_image(request, pk):
+    image_key = f"liked_image_{pk}"
+    last_like_key = f"last_like_time_{pk}"
+
+    last_like = request.session.get(last_like_key)
+    if last_like:
+        last_time = now() - timedelta(seconds=10)
+        if last_like > str(last_time):
+            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
+
+    if request.session.get(image_key):
+        return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
+
     try:
-        video = AIVideo.objects.get(pk=pk)
-        video.likes += 1
-        video.save()
-        return JsonResponse({'status': 'success', 'likes': video.likes})
-    except AIVideo.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Video not found'}, status=404)
+        image = AIImage.objects.get(pk=pk)
+        image.likes += 1
+        image.save()
+
+        request.session[image_key] = True
+        request.session[last_like_key] = str(now())
+
+        return JsonResponse({'status': 'success', 'likes': image.likes})
+    except AIImage.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Image not found'}, status=404)
 
 @login_required
 def like_ai_video(request, pk):
+    video_key = f"liked_video_{pk}"
+    last_like_key = f"last_like_time_video_{pk}"
+
+    last_like = request.session.get(last_like_key)
+    if last_like:
+        last_time = now() - timedelta(seconds=10)
+        if last_like > str(last_time):
+            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
+
+    if request.session.get(video_key):
+        return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
+
     try:
         video = AIVideo.objects.get(pk=pk)
         video.likes += 1
         video.save()
+
+        request.session[video_key] = True
+        request.session[last_like_key] = str(now())
+
         return JsonResponse({'status': 'success', 'likes': video.likes})
     except AIVideo.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Video not found'}, status=404)
