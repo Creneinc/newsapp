@@ -326,9 +326,11 @@
     {% endif %}
 
 </div>
+
 <!-- JavaScript for Tab Switching -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("Tab switching script loaded");
         const trendingBtn = document.getElementById('trending-btn');
         const recommendedBtn = document.getElementById('recommended-btn');
         const popularArticles = document.getElementById('popular-articles');
@@ -361,40 +363,30 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Get all video thumbnail containers
         const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
+        console.log("Found video thumbnail containers:", thumbnailContainers.length);
 
         // Process each container
         thumbnailContainers.forEach(container => {
             const videoUrl = container.dataset.videoUrl;
+            console.log("Processing video URL:", videoUrl);
+
             const canvas = container.querySelector('canvas');
             const context = canvas.getContext('2d');
 
             // Create temporary video element
             const video = document.createElement('video');
-            video.crossOrigin = 'anonymous';
-            video.src = videoUrl + '#t=1.0'; // Seek to 1 second
+            document.body.appendChild(video);  // Add to DOM temporarily
+            video.style.display = 'none';
+            video.preload = 'auto';
+            // video.crossOrigin = 'anonymous';  // Commented out to avoid CORS issues
 
             // Set canvas dimensions
             canvas.width = 320;
             canvas.height = 180;
 
-            // Once video can play, capture the frame
-            video.addEventListener('loadeddata', function() {
-                // Try to seek to a specific time
-                video.currentTime = 1.0; // 1 second in
-            });
-
-            video.addEventListener('seeked', function() {
-                // Draw the video frame on the canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Clean up
-                video.pause();
-                video.removeAttribute('src');
-                video.load();
-            });
-
             // Handle errors - fill with gradient if thumbnail fails
-            video.addEventListener('error', function() {
+            video.addEventListener('error', function(e) {
+                console.error("Error loading video:", e);
                 // Create gradient background as fallback
                 const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
                 gradient.addColorStop(0, '#10b981');  // emerald-500
@@ -407,8 +399,38 @@
                 context.fillStyle = 'white';
                 context.textAlign = 'center';
                 context.fillText('AI Video', canvas.width/2, canvas.height/2);
+
+                document.body.removeChild(video);
             });
+
+            // Once video can play, capture the frame
+            video.addEventListener('loadeddata', function() {
+                console.log("Video loaded:", videoUrl);
+                // Try to seek to a specific time
+                video.currentTime = 1.0; // 1 second in
+            });
+
+            video.addEventListener('seeked', function() {
+                console.log("Video seeked to timestamp for:", videoUrl);
+                // Draw the video frame on the canvas
+                try {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    console.log("Canvas updated with video frame");
+                } catch (err) {
+                    console.error("Error drawing to canvas:", err);
+                }
+
+                // Clean up
+                video.pause();
+                video.removeAttribute('src');
+                document.body.removeChild(video);
+                video.load();
+            });
+
+            // Set source last (important for proper event sequence)
+            video.src = videoUrl + '#t=1.0'; // Seek to 1 second
         });
     });
 </script>
+
 {% endblock %}
