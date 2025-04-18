@@ -21,8 +21,6 @@ import time
 import os
 import time
 
-
-
 logger = logging.getLogger(__name__)
 
 CATEGORIES = get_category_dict()
@@ -248,41 +246,45 @@ def article_list(request):
     category = request.GET.get('category')
     show_all = request.GET.get('show_all')
 
-    # Special case for "category=All"
+    # Special case for "category=All" - treat as show_all
     if category == 'All':
         category = None
         show_all = 'true'
 
-    # Determine if this is the main page
-    is_main_page = (category is None and request.path == '/') or show_all == 'true'
+    # Determine if this is the main page (should show trending and AI showcase)
+    is_main_page = request.path == '/' or show_all == 'true'
 
-    # Get all articles
+    # Always get all articles first
     articles = Article.objects.all().order_by('-created_at')
 
-    # Apply category filter if needed
+    # For debugging
+    print(f"Total articles before filtering: {articles.count()}")
+
+    # Apply category filter only if needed
     if category and category != 'All':
         articles = articles.filter(category=category)
+        print(f"Filtered to {articles.count()} articles for category: {category}")
 
-    # Get popular articles
+    # Get popular articles for the trending section
     popular_articles = Article.objects.filter(
         moderation_status='approved'
     ).order_by('-view_count', '-created_at')[:4]
 
-    # Get recommended articles
+    # Get recommended articles if user is logged in
     if request.user.is_authenticated:
+        # You could add more sophisticated recommendation logic here
         recommended_articles = Article.objects.filter(
             moderation_status='approved'
         ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
     else:
         recommended_articles = []
 
-    # Get AI content
-    from .models import AIImage, AIVideo  # Move this import to the top of your file
+    # Get AI showcase content
     ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
     ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
-    # Get categories for the filter
-    CATEGORIES = get_category_dict()  # Use your existing function
+    # Get categories for the category filter
+    categories = get_category_dict()
 
     context = {
         'articles': articles,
@@ -290,7 +292,7 @@ def article_list(request):
         'recommended_articles': recommended_articles,
         'ai_images': ai_images,
         'ai_videos': ai_videos,
-        'categories': CATEGORIES,
+        'categories': categories,
         'is_main_page': is_main_page,
     }
 
