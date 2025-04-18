@@ -663,3 +663,13 @@ def like_ai_image(request, pk):
     image.likes += 1
     image.save()
     return redirect(request.META.get('HTTP_REFERER', 'ai_image_gallery'))
+
+@login_required
+def like_ai_video(request, pk):
+    try:
+        video = AIVideo.objects.get(pk=pk)
+        video.likes += 1
+        video.save()
+        return JsonResponse({'status': 'success', 'likes': video.likes})
+    except AIVideo.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Video not found'}, status=404)
