@@ -46,7 +46,7 @@
         <div id="recommended-articles" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in recommended_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk article.title|slugify %}">
                     {% if article.image %}
                         <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
                     {% endif %}
@@ -282,7 +282,7 @@
         {% for article in articles|slice:"5:20" %}
         {% if article.moderation_status == 'approved' or user.is_staff %}
         <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
-            <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+            <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk article.title|slugify %}">
                 {% if article.category == "AI Image" %}
                     <img src="{{ article.image.url }}" class="w-full h-48 object-contain bg-gray-100" alt="{{ article.title }}">
                 {% elif article.category == "AI Video" %}
