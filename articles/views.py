@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
+from django.utils import timezone
+from articles.models import get_category_dict
 from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
@@ -17,7 +19,9 @@ import json
 import logging
 import time
 import os
-from articles.models import get_category_dict
+import time
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -227,47 +231,68 @@ def check_article_status(request):
 
     return JsonResponse({'status': 'pending'})
 
-# 🌍 Homepage: Article List with Optional Category Filter
+# Trending algorithm (time-decayed)
+def get_trending_articles():
+    recent_articles = Article.objects.filter(
+        moderation_status='approved',
+        created_at__gte=timezone.now() - timezone.timedelta(days=7)
+    )
+    for article in recent_articles:
+        age_hours = (timezone.now() - article.created_at).total_seconds() / 3600
+        article.trending_score = (article.view_count + article.likes * 3) / (1 + age_hours)
+    sorted_articles = sorted(recent_articles, key=lambda a: a.trending_score, reverse=True)
+    return sorted_articles[:4]
+
+
 def article_list(request):
+    # Get all articles with proper filtering
+    articles = Article.objects.all().order_by('-created_at')
+
+    # Filter by category if requested
+    category = request.GET.get('category')
+    if category:
+        # Handle multiple categories separated by commas
+        if ',' in category:
+            categories = category.split(',')
+            articles = articles.filter(category__in=categories)
+        else:
+            articles = articles.filter(category=category)
+
     # Get popular articles
-    popular_articles = Article.objects.filter(moderation_status='approved').order_by('-view_count', '-created_at')[:4]
+    popular_articles = Article.objects.filter(
+        moderation_status='approved'
+    ).order_by('-view_count', '-created_at')[:4]
 
-    # Get recommended articles for authenticated users
+    # Get recommended articles
     if request.user.is_authenticated:
+        # Add your recommendation logic here
         recommended_articles = Article.objects.filter(
-            moderation_status='approved',
-        )
-
-        # Check if the user has favorite_categories attribute
-        if hasattr(request.user, 'favorite_categories') and request.user.favorite_categories.exists():
-            recommended_articles = recommended_articles.filter(
-                category__in=request.user.favorite_categories.all()
-            )
-
-        # Exclude articles already in popular_articles
-        popular_ids = [a.id for a in popular_articles]
-        recommended_articles = recommended_articles.exclude(id__in=popular_ids).order_by('-created_at')[:4]
+            moderation_status='approved'
+        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
     else:
         recommended_articles = []
 
-    category = request.GET.get('category', 'All')
-    search_query = request.GET.get('search', '')
+    # Get AI content
+    ai_images = Article.objects.filter(
+        category='AI Image',
+        moderation_status='approved'
+    ).order_by('-created_at')[:1]
 
-    articles = Article.objects.all()
+    ai_videos = Article.objects.filter(
+        category='AI Video',
+        moderation_status='approved'
+    ).order_by('-created_at')[:1]
 
-    if category and category != 'All':
-        articles = articles.filter(category=category)
-
-    if search_query:
-        articles = articles.filter(title__icontains=search_query)
-
-    articles = articles.order_by('-created_at')
-
-    return render(request, 'articles/article_list.html', {
+    context = {
         'articles': articles,
+        'popular_articles': popular_articles,
+        'recommended_articles': recommended_articles,
+        'ai_images': ai_images,
+        'ai_videos': ai_videos,
         'categories': CATEGORIES,
-        'selected_category': category,
-    })
+    }
+
+    return render(request, 'articles/article_list.html', context)
 
 # 🔎 Article Detail + Comments
 def article_detail(request, pk):
@@ -530,3 +555,4 @@ def reject_article(request, pk):
 
     messages.success(request, f"Article '{article.title}' has been rejected.")
     return redirect('article_detail', pk=pk)
+

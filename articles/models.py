@@ -39,6 +39,7 @@ class Article(models.Model):
         choices=MODERATION_CHOICES,
         default='pending'
     )
+    is_trending = models.BooleanField(default=False)
     view_count = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
 
