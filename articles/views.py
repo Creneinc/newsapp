@@ -252,49 +252,45 @@ def article_list(request):
         show_all = 'true'
 
     # Determine if this is the main page (should show trending and AI showcase)
-    is_main_page = request.path == '/' or show_all == 'true'
+    is_main_page = request.path == '/'
 
-    # Always get all articles first
-    articles = Article.objects.all().order_by('-created_at')
-
-    # For debugging
-    print(f"Total articles before filtering: {articles.count()}")
+    # Get articles
+    articles = Article.objects.filter(moderation_status='approved').order_by('-created_at')
 
     # Apply category filter only if needed
     if category and category != 'All':
         articles = articles.filter(category=category)
-        print(f"Filtered to {articles.count()} articles for category: {category}")
 
-    # Get popular articles for the trending section
-    popular_articles = Article.objects.filter(
-        moderation_status='approved'
-    ).order_by('-view_count', '-created_at')[:4]
+    # Main page sections (Trending + AI Showcase)
+    popular_articles = []
+    recommended_articles = []
+    ai_images = []
+    ai_videos = []
 
-    # Get recommended articles if user is logged in
-    if request.user.is_authenticated:
-        # You could add more sophisticated recommendation logic here
-        recommended_articles = Article.objects.filter(
+    if is_main_page:
+        popular_articles = Article.objects.filter(
             moderation_status='approved'
-        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
-    else:
-        recommended_articles = []
+        ).order_by('-view_count', '-created_at')[:4]
 
-    # Get AI showcase content
-    ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
-    ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
+        if request.user.is_authenticated:
+            recommended_articles = Article.objects.filter(
+                moderation_status='approved'
+            ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
 
-    # Get categories for the category filter
-    categories = get_category_dict()
+        ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
+        ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
-    context = {
-        'articles': articles,
-        'popular_articles': popular_articles,
-        'recommended_articles': recommended_articles,
-        'ai_images': ai_images,
-        'ai_videos': ai_videos,
-        'categories': categories,
-        'is_main_page': True,
-    }
+        categories = get_category_dict()
+
+        context = {
+            'articles': articles,
+            'popular_articles': popular_articles,
+            'recommended_articles': recommended_articles,
+            'ai_images': ai_images,
+            'ai_videos': ai_videos,
+            'categories': categories,
+            'is_main_page': is_main_page,
+        }
 
     return render(request, 'articles/article_list.html', context)
 
