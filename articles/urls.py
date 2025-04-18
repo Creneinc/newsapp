@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import article_list, new_article, edit_article, delete_article, article_detail
+from .views import article_list, new_article, edit_article, delete_article, article_detail, home_view
 from django.conf.urls.static import static
 from django.conf import settings
 from django.contrib.auth import views as auth_views
@@ -8,7 +8,8 @@ from articles.views import search_results, ai_image_detail, ai_video_detail, sig
 from articles import views
 
 urlpatterns = [
-    path('', article_list, name='article_list'),
+    path('', home_view, name='home'),  # This is the main page
+    path('articles/', article_list, name='article_list'),  # All/filter/category views
     path('signup/', signup_view, name='signup'),
     path('create/article/', views.new_article, name='new_article'),  # This is for standard form
     path('create/article/ajax/', views.create_article, name='create_article'),  # This is for AJAX requests

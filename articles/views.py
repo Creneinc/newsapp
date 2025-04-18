@@ -241,56 +241,56 @@ def get_trending_articles():
     sorted_articles = sorted(recent_articles, key=lambda a: a.trending_score, reverse=True)
     return sorted_articles[:4]
 
-def article_list(request):
-    # Get query parameters
-    category = request.GET.get('category')
-    show_all = request.GET.get('show_all')
+def home_view(request):
+    # Mark as main page
+    is_main_page = True
 
-    # Special case for "category=All" - treat as show_all
-    if category == 'All':
-        category = None
-        show_all = 'true'
-
-    # Determine if this is the main page (should show trending and AI showcase)
-    is_main_page = request.path == '/'
-
-    # Get articles
+    # Fetch homepage content
+    categories = get_category_dict()
     articles = Article.objects.filter(moderation_status='approved').order_by('-created_at')
 
-    # Apply category filter only if needed
-    if category and category != 'All':
+    popular_articles = Article.objects.filter(
+        moderation_status='approved'
+    ).order_by('-view_count', '-created_at')[:4]
+
+    recommended_articles = []
+    if request.user.is_authenticated:
+        recommended_articles = Article.objects.filter(
+            moderation_status='approved'
+        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
+
+    ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
+    ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
+
+    context = {
+        'articles': articles,
+        'popular_articles': popular_articles,
+        'recommended_articles': recommended_articles,
+        'ai_images': ai_images,
+        'ai_videos': ai_videos,
+        'categories': categories,
+        'is_main_page': is_main_page,
+    }
+
+    return render(request, 'articles/article_list.html', context)
+
+def article_list(request):
+    category = request.GET.get('category')
+    categories = get_category_dict()
+
+    articles = Article.objects.filter(moderation_status='approved').order_by('-created_at')
+    if category:
         articles = articles.filter(category=category)
 
-    # Main page sections (Trending + AI Showcase)
-    popular_articles = []
-    recommended_articles = []
-    ai_images = []
-    ai_videos = []
-
-    if is_main_page:
-        popular_articles = Article.objects.filter(
-            moderation_status='approved'
-        ).order_by('-view_count', '-created_at')[:4]
-
-        if request.user.is_authenticated:
-            recommended_articles = Article.objects.filter(
-                moderation_status='approved'
-            ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
-
-        ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
-        ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
-
-        categories = get_category_dict()
-
-        context = {
-            'articles': articles,
-            'popular_articles': popular_articles,
-            'recommended_articles': recommended_articles,
-            'ai_images': ai_images,
-            'ai_videos': ai_videos,
-            'categories': categories,
-            'is_main_page': is_main_page,
-        }
+    context = {
+        'articles': articles,
+        'popular_articles': [],
+        'recommended_articles': [],
+        'ai_images': [],
+        'ai_videos': [],
+        'categories': categories,
+        'is_main_page': False,
+    }
 
     return render(request, 'articles/article_list.html', context)
 
