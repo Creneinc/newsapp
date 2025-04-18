@@ -179,7 +179,7 @@
             {% if articles %}
                 <div class="p-4 sm:p-6">
                     {% if articles.0.moderation_status == 'approved' or user.is_staff %}
-                        <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' articles.0.pk %}">
+                    <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' articles.0.pk articles.0.title|slugify %}">
                             {% if articles.0.category == "AI Image" %}
                                 <!-- 🧠 AI Generated Image Display -->
                                 <img src="{{ articles.0.image.url }}" class="w-full h-64 sm:h-96 object-contain rounded-lg bg-gray-100" alt="{{ articles.0.title }}">
