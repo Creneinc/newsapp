@@ -19,7 +19,7 @@
         <div id="popular-articles" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in popular_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk article.title|slugify %}">
                     {% if article.image %}
                         <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
                     {% endif %}
