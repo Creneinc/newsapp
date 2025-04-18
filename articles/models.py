@@ -91,6 +91,8 @@ class AIImage(models.Model):
     image = models.ImageField(upload_to='ai_images/')
     prompt_used = models.TextField(blank=True, null=True)
     generated_at = models.DateTimeField(auto_now_add=True)
+    view_count = models.PositiveIntegerField(default=0)
+    likes = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title or "Untitled AI Image"
@@ -102,6 +104,8 @@ class AIVideo(models.Model):
     video = models.FileField(upload_to='ai_videos/', max_length=500)
     prompt_used = models.TextField(blank=True, null=True)
     generated_at = models.DateTimeField(auto_now_add=True)
+    view_count = models.PositiveIntegerField(default=0)
+    likes = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title or "Untitled AI Video"

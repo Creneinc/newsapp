@@ -656,3 +656,10 @@ def like_article(request, pk):
         return JsonResponse({'status': 'success', 'likes': article.likes})
     except Article.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Article not found'}, status=404)
+
+@login_required
+def like_ai_image(request, pk):
+    image = get_object_or_404(AIImage, pk=pk)
+    image.likes += 1
+    image.save()
+    return redirect(request.META.get('HTTP_REFERER', 'ai_image_gallery'))

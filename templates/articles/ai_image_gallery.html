@@ -21,6 +21,18 @@
                   By {{ image.user.username }}
                 </a>
               </div>
+
+              <!-- 🔢 View Count & ❤️ Like Count -->
+              <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+                <div>👁️ {{ image.view_count }} views</div>
+                <div class="flex items-center gap-1">
+                  <form method="post" action="{% url 'like_ai_image' image.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-500 hover:scale-110 transition">❤️</button>
+                  </form>
+                  <span>{{ image.likes }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </a>

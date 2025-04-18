@@ -12,7 +12,6 @@
 
             <!-- Video preview with dynamic thumbnail -->
             <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
-              <!-- Canvas for thumbnail -->
               <canvas class="w-full h-48 object-cover bg-gray-100"></canvas>
 
               <!-- Play button overlay -->
@@ -35,7 +34,12 @@
                 <p class="text-sm text-gray-600 line-clamp-2">{{ video.prompt_used }}</p>
               {% endif %}
 
-              <div class="flex justify-between items-center mt-2">
+              <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <span>👁️ {{ video.view_count }} views</span>
+                <span>❤️ {{ video.likes }}</span>
+              </div>
+
+              <div class="flex justify-between items-center mt-1">
                 <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
                 <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
                   By {{ video.user.username }}
@@ -45,7 +49,7 @@
           </div>
         </a>
 
-        <!-- Delete Button (Only for the creator of the video) -->
+        <!-- Delete Button (Only for the creator) -->
         {% if video.user == user %}
           <form action="{% url 'delete_ai_video' video.pk %}" method="post" class="absolute top-0 right-0 m-2">
             {% csrf_token %}
@@ -80,57 +84,43 @@
   {% endif %}
 </div>
 
-<!-- Script for generating video thumbnails -->
+<!-- 🖼 Script for generating video thumbnails -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Get all video thumbnail containers
   const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
 
-  // Process each container
   thumbnailContainers.forEach(container => {
     const videoUrl = container.dataset.videoUrl;
     const canvas = container.querySelector('canvas');
     const context = canvas.getContext('2d');
 
-    // Create temporary video element
     const video = document.createElement('video');
     video.crossOrigin = 'anonymous';
-    video.src = videoUrl + '#t=1.0'; // Seek to 1 second
-
-    // Set canvas dimensions
+    video.src = videoUrl + '#t=1.0';
     canvas.width = 320;
     canvas.height = 180;
 
-    // Once video can play, capture the frame
-    video.addEventListener('loadeddata', function() {
-      // Try to seek to a specific time
-      video.currentTime = 1.0; // 1 second in
+    video.addEventListener('loadeddata', () => {
+      video.currentTime = 1.0;
     });
 
-    video.addEventListener('seeked', function() {
-      // Draw the video frame on the canvas
+    video.addEventListener('seeked', () => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Clean up
       video.pause();
       video.removeAttribute('src');
       video.load();
     });
 
-    // Handle errors - fill with gradient if thumbnail fails
-    video.addEventListener('error', function() {
-      // Create gradient background as fallback
+    video.addEventListener('error', () => {
       const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#10b981');  // emerald-500
-      gradient.addColorStop(1, '#047857');  // emerald-700
+      gradient.addColorStop(0, '#10b981');
+      gradient.addColorStop(1, '#047857');
       context.fillStyle = gradient;
       context.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Add video text
       context.font = '24px Arial';
       context.fillStyle = 'white';
       context.textAlign = 'center';
-      context.fillText('AI Video', canvas.width/2, canvas.height/2);
+      context.fillText('AI Video', canvas.width / 2, canvas.height / 2);
     });
   });
 });

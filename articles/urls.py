@@ -30,6 +30,8 @@ urlpatterns = [
     path('article/<int:pk>-<slug:slug>/approve/', views.approve_article, name='approve_article'),
     path('article/<int:pk>-<slug:slug>/reject/', views.reject_article, name='reject_article'),
     path('article/<int:pk>/like/', views.like_article, name='like_article'),
+    path('ai-images/<int:pk>/like/', views.like_ai_image, name='like_ai_image'),
+    path('ai-videos/<int:pk>/like/', views.like_ai_video, name='like_ai_video'),
 
     path('create/article/', views.new_article, name='new_article'),  # This is for standard form
     path('create/article/ajax/', views.create_article, name='create_article'),  # This is for AJAX requests
