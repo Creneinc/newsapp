@@ -143,7 +143,7 @@ class SiteSettings(models.Model):
     enable_article_generation = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
-        if SiteSetting.objects.exists() and not self.pk:
+        if self.__class__.objects.exists() and not self.pk:
             raise ValidationError("There can only be one SiteSetting instance.")
         super().save(*args, **kwargs)
 
@@ -152,7 +152,7 @@ class SiteSettings(models.Model):
 
     @staticmethod
     def get():
-        return SiteSetting.objects.first()
+        return SiteSettings.objects.first()
 
     class Meta:
         verbose_name = "Site Setting"

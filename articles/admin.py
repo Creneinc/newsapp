@@ -10,4 +10,14 @@ class ArticleAdmin(admin.ModelAdmin):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    list_display = ['auto_approve_articles', 'auto_approve_images', 'auto_approve_videos']
+    list_display = [
+        'auto_approve_articles',
+        'auto_approve_images',
+        'auto_approve_videos',
+        'site_offline_mode',
+        'default_category',
+        'enable_article_generation',
+    ]
+
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()

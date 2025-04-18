@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for video in videos %}
       <div class="relative">
-        <a href="{% url 'ai_video_detail' video.pk %}" class="block">
+        <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}" class="block">
           <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
 
             <!-- Video preview with dynamic thumbnail -->
