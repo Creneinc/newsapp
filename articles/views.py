@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib import messages
@@ -12,7 +11,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from articles.models import get_category_dict
-from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict, SiteSettings
+from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, SiteSettings
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
 from django.template.loader import render_to_string
@@ -21,11 +20,11 @@ from uuid import uuid4
 from django.utils.timezone import now
 from datetime import timedelta
 import requests
-import json
 import logging
 import time
 import os
 import time
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -653,13 +652,31 @@ def reject_article(request, pk):
     messages.success(request, f"Article '{article.title}' has been rejected.")
     return redirect('article_detail', pk=pk)
 
-@require_POST
-@csrf_exempt
+@login_required
 def like_article(request, pk):
+    article_key = f"liked_article_{pk}"
+    last_like_key = f"last_like_time_article_{pk}"
+
+    # Check if the user has liked the article within the last 10 seconds
+    last_like = request.session.get(last_like_key)
+    if last_like:
+        last_time = now() - timedelta(seconds=10)
+        if last_like > str(last_time):
+            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
+
+    # If the user has already liked this article, prevent them from liking again
+    if request.session.get(article_key):
+        return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
+
     try:
         article = Article.objects.get(pk=pk)
         article.likes += 1
         article.save()
+
+        # Mark the article as liked in the session
+        request.session[article_key] = True
+        request.session[last_like_key] = str(now())  # Update the last like time
+
         return JsonResponse({'status': 'success', 'likes': article.likes})
     except Article.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Article not found'}, status=404)
@@ -669,6 +686,7 @@ def like_ai_image(request, pk):
     image_key = f"liked_image_{pk}"
     last_like_key = f"last_like_time_{pk}"
 
+    # Check if the user is trying to like again within the timeout period
     last_like = request.session.get(last_like_key)
     if last_like:
         last_time = now() - timedelta(seconds=10)
@@ -679,10 +697,11 @@ def like_ai_image(request, pk):
         return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
 
     try:
-        image = AIImage.objects.get(pk=pk)
+        image = get_object_or_404(AIImage, pk=pk)
         image.likes += 1
         image.save()
 
+        # Save the like session to prevent double liking
         request.session[image_key] = True
         request.session[last_like_key] = str(now())
 
@@ -695,6 +714,7 @@ def like_ai_video(request, pk):
     video_key = f"liked_video_{pk}"
     last_like_key = f"last_like_time_video_{pk}"
 
+    # Check if the user is trying to like again within the timeout period
     last_like = request.session.get(last_like_key)
     if last_like:
         last_time = now() - timedelta(seconds=10)
@@ -705,10 +725,11 @@ def like_ai_video(request, pk):
         return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
 
     try:
-        video = AIVideo.objects.get(pk=pk)
+        video = get_object_or_404(AIVideo, pk=pk)
         video.likes += 1
         video.save()
 
+        # Save the like session to prevent double liking
         request.session[video_key] = True
         request.session[last_like_key] = str(now())
 

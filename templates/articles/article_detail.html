@@ -34,14 +34,12 @@
 
     <!-- ❤️ Like Button -->
     <div class="mt-4 flex items-center gap-2">
-        <button id="like-button" class="flex items-center text-gray-500 hover:text-emerald-600 focus:outline-none transition">
-            <svg id="heart-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-            <span id="like-count">{{ article.likes }}</span>
+        <button class="like-btn text-red-500 hover:scale-110 transition"
+                data-id="{{ article.pk }}"
+                data-type="article">
+            ❤️
         </button>
-        <span class="text-sm text-gray-400">Likes</span>
+        <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
     </div>
 
     <!-- ✏️ Edit & Delete -->
@@ -117,24 +115,29 @@
         checkArticleGenerationStatus();
     {% endif %}
 
-    document.getElementById("like-button").addEventListener("click", function (e) {
-        e.preventDefault();
+    // Like Button Functionality
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const articleId = this.dataset.id;
 
-        fetch("{% url 'like_article' article.pk %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie('csrftoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                document.getElementById("like-count").textContent = data.likes;
-                document.getElementById("heart-icon").classList.add("text-red-500");
-            }
-        })
-        .catch(error => console.error("Like error:", error));
+            fetch(`/articles/${articleId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const likeCount = document.getElementById(`like-count-article-${articleId}`);
+                    likeCount.textContent = data.likes;
+                    button.disabled = true;
+                    button.textContent = '❤️ Liked';
+                }
+            })
+            .catch(error => console.error("Like error:", error));
+        });
     });
 
     function getCookie(name) {
@@ -143,7 +146,7 @@
             const cookies = document.cookie.split(';');
             for (let cookie of cookies) {
                 cookie = cookie.trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                if (cookie.startsWith(name + "=")) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }
