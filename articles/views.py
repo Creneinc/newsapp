@@ -249,7 +249,7 @@ def article_list(request):
     category = request.GET.get('category')
 
     # Determine if this is the main page (no category filter)
-    is_main_page = category is None
+    is_main_page = category is None and (request.path == '/' or request.path == '/article_list/')
 
     # Your existing view code...
     articles = Article.objects.all().order_by('-created_at')
