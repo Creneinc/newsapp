@@ -117,7 +117,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {% for image in images %}
                                 <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden h-full">
-                                    <a href="{% url 'ai_image_detail' image.pk %}">
+                                    <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}" class="block">
                                         <img src="{{ image.image.url }}" class="w-full h-48 object-cover" alt="{{ image.title }}">
                                     </a>
                                     <div class="p-3">

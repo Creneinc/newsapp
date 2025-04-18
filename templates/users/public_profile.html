@@ -90,7 +90,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {% for image in images %}
                                 <div>
-                                    <a href="{% url 'ai_image_detail' image.pk %}">
+                                    <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}" class="block">
                                         <img src="{{ image.image.url }}" class="w-full h-36 object-cover rounded-md" alt="{{ image.title }}">
                                         <p class="mt-1 text-sm text-gray-800 truncate">{{ image.title }}</p>
                                     </a>
