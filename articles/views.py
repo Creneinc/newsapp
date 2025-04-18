@@ -555,6 +555,8 @@ def search_results(request):
 
 def ai_image_detail(request, pk, slug=None):
     image = get_object_or_404(AIImage, pk=pk)
+    image.view_count += 1
+    image.save(update_fields=["view_count"])
     # Make sure to query the comments
     comments = ImageComment.objects.filter(image=image).order_by('-created_at')
 
@@ -566,6 +568,8 @@ def ai_image_detail(request, pk, slug=None):
 
 def ai_video_detail(request, pk, slug=None):
     video = get_object_or_404(AIVideo, pk=pk)
+    video.view_count += 1
+    video.save(update_fields=["view_count"])
     comments = video.comments.all()  # Get all comments
     return render(request, 'articles/ai_video_detail.html', {
         'video': video,

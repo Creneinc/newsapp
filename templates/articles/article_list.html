@@ -413,7 +413,7 @@
 </script>
 
 <!-- Script for generating video thumbnails -->
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Get all video thumbnail containers
         const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
@@ -485,49 +485,50 @@
             video.src = videoUrl + '#t=1.0'; // Seek to 1 second
         });
     });
-</script>
+    </script>
 
-<script>
+    <script>
     document.addEventListener("DOMContentLoaded", function () {
-      document.querySelectorAll(".like-article-btn").forEach(button => {
-        button.addEventListener("click", function () {
-          const articleId = this.dataset.id;
-          fetch(`/articles/${articleId}/like/`, {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": getCookie("csrftoken"),
-              "Content-Type": "application/json"
-            }
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === "success") {
-              document.getElementById(`like-count-${articleId}`).textContent = data.likes;
-              button.disabled = true;
-              button.textContent = "❤️ Liked";
-            } else {
-              alert(data.message || "Failed to like the article.");
-            }
-          })
-          .catch(err => console.error("Like error:", err));
+        document.querySelectorAll(".like-article-btn").forEach(button => {
+          button.addEventListener("click", function () {
+            const articleId = this.dataset.id;
+            fetch(`/articles/${articleId}/like/`, {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/json"
+              }
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === "success") {
+                const countEl = document.getElementById(`like-count-${articleId}`);
+                countEl.textContent = data.likes;
+                button.disabled = true;
+                button.innerHTML = "❤️ Liked";
+              } else {
+                alert(data.message || "Failed to like the article.");
+              }
+            })
+            .catch(err => console.error("Like error:", err));
+          });
         });
-      });
 
-      function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-          const cookies = document.cookie.split(";");
-          for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + "=")) {
-              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-              break;
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+              cookie = cookie.trim();
+              if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
             }
           }
+          return cookieValue;
         }
-        return cookieValue;
-      }
-    });
+      });
     </script>
 
     <script>
