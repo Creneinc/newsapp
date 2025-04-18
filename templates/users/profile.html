@@ -164,7 +164,7 @@
                     {% if articles %}
                         <div class="space-y-2">
                             {% for article in articles %}
-                                <a href="{% url 'article_detail' article.pk %}" class="block p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition">
+                                <a href="{% url 'article_detail' article.pk article.title|slugify %}" class="block p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition">
                                     <div class="flex justify-between">
                                         <h6 class="font-medium text-gray-800">{{ article.title }}</h6>
                                         <span class="text-sm text-gray-500">{{ article.created_at|date:"M d, Y" }}</span>

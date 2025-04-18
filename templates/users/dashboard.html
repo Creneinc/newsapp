@@ -91,7 +91,7 @@
                                 <tbody>
                                     {% for article in articles %}
                                     <tr class="bg-white border-b">
-                                        <td class="px-4 py-3"><a href="{% url 'article_detail' article.pk %}" class="text-emerald-600 hover:underline">{{ article.title }}</a></td>
+                                        <td class="px-4 py-3"><a href="{% url 'article_detail' article.pk article.title|slugify %}" class="text-emerald-600 hover:underline">{{ article.title }}</></td>
                                         <td class="px-4 py-3">{{ article.get_category_display }}</td>
                                         <td class="px-4 py-3">{{ article.created_at|date:"M d, Y" }}</td>
                                         <td class="px-4 py-3 flex space-x-2">
