@@ -115,7 +115,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {% for video in videos %}
                                 <div>
-                                    <a href="{% url 'ai_video_detail' video.pk %}">
+                                    <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
                                         <video class="w-full h-48 object-cover rounded-md" controls>
                                             <source src="{{ video.video.url }}" type="video/mp4">
                                             Your browser does not support the video tag.

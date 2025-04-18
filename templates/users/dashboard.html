@@ -154,7 +154,7 @@
                                     </div>
                                     <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
                                         <div class="flex space-x-2">
-                                            <a href="{% url 'ai_video_detail' video.pk %}" class="px-3 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded hover:bg-gray-300 transition">View</a>
+                                            <a href="{% url 'ai_video_detail' video.pk video.title|slugify %} class="px-3 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded hover:bg-gray-300 transition">View</a>
                                             <a href="{% url 'delete_ai_video' video.pk %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
                                         </div>
                                     </div>
