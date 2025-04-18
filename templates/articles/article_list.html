@@ -45,18 +45,18 @@
         <div id="recommended-articles" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in recommended_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                {% if article.image %}
-                    <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
-                {% endif %}
-                <div class="p-3">
-                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mb-2">Recommended</span>
-                    <h3 class="text-md font-semibold text-gray-900 line-clamp-2">
-                        <a href="{% url 'article_detail' article.pk %}" class="hover:text-emerald-600">
+                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+                    {% if article.image %}
+                        <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
+                    {% endif %}
+                    <div class="p-3">
+                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mb-2">Recommended</span>
+                        <h3 class="text-md font-semibold text-gray-900 line-clamp-2">
                             {{ article.title }}
-                        </a>
-                    </h3>
-                    <div class="mt-2 text-xs text-gray-500">
-                        Based on your interests
+                        </h3>
+                        <div class="mt-2 text-xs text-gray-500">
+                            Based on your interests
+                        </div>
                     </div>
                 </div>
             </div>
@@ -68,142 +68,142 @@
         </div>
     </div>
 
-<!-- 🎨 AI Content Showcase -->
-<div class="mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">AI Showcase</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- AI Images Section -->
-        <div>
-            <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
-                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mr-2">AI Images</span>
-                <span>Creative Visuals</span>
-            </h3>
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                {% for image in ai_images|slice:":1" %}
-                <div class="p-3">
-                    <!-- Make the image clickable -->
-                    <div class="cursor-pointer clickable-container" data-href="{% url 'ai_image_detail' image.pk %}">
-                        <img src="{{ image.image.url }}" class="w-full h-48 object-contain rounded-md bg-gray-100" alt="{{ image.title }}">
-                        <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ image.title|default:"Untitled AI Image" }}</h4>
-                        {% if image.prompt_used %}
-                            <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ image.prompt_used }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
-                        <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                            By {{ image.user.username }}
+    <!-- 🎨 AI Content Showcase -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">AI Showcase</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- AI Images Section -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mr-2">AI Images</span>
+                    <span>Creative Visuals</span>
+                </h3>
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    {% for image in ai_images|slice:":1" %}
+                    <div class="p-3">
+                        <!-- Make the image clickable -->
+                        <div class="cursor-pointer clickable-container" data-href="{% url 'ai_image_detail' image.pk %}">
+                            <img src="{{ image.image.url }}" class="w-full h-48 object-contain rounded-md bg-gray-100" alt="{{ image.title }}">
+                            <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ image.title|default:"Untitled AI Image" }}</h4>
+                            {% if image.prompt_used %}
+                                <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ image.prompt_used }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
+                            <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                                By {{ image.user.username }}
+                            </a>
+                        </div>
+                        <a href="{% url 'ai_image_detail' image.pk %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
+                            View full image →
                         </a>
                     </div>
-                    <a href="{% url 'ai_image_detail' image.pk %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
-                        View full image →
-                    </a>
-                     </div>
-                  {% empty %}
+                    {% empty %}
                     <div class="p-4 text-center text-gray-500">
                         <p>No AI images available.</p>
                         <a href="{% url 'ai_image_gallery' %}" class="text-purple-600 hover:underline text-sm mt-2 inline-block">Browse all AI images →</a>
                     </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- AI Videos Section -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full mr-2">AI Videos</span>
+                    <span>Generated Content</span>
+                </h3>
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    {% for video in ai_videos|slice:":1" %}
+                    <div class="p-3">
+                        <!-- Make the video thumbnail clickable -->
+                        <div class="cursor-pointer clickable-container" data-href="{% url 'ai_video_detail' video.pk %}">
+                            <!-- Video preview with dynamic thumbnail -->
+                            <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
+                                <!-- Canvas for thumbnail -->
+                                <canvas class="w-full h-48 object-cover bg-gray-100 rounded-md"></canvas>
+
+                                <!-- Play button overlay -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="bg-black bg-opacity-30 rounded-full p-3">
+                                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ video.title|default:"Untitled AI Video" }}</h4>
+                            {% if video.prompt_used %}
+                                <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ video.prompt_used }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
+                            <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                                By {{ video.user.username }}
+                            </a>
+                        </div>
+                        <a href="{% url 'ai_video_detail' video.pk %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">
+                            Watch full video →
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p>No AI videos available.</p>
+                        <a href="{% url 'ai_video_gallery' %}" class="text-indigo-600 hover:underline text-sm mt-2 inline-block">Browse all AI videos →</a>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
-        <!-- AI Videos Section -->
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
-                        <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full mr-2">AI Videos</span>
-                        <span>Generated Content</span>
-                    </h3>
-                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                        {% for video in ai_videos|slice:":1" %}
-                        <div class="p-3">
-                            <!-- Make the video thumbnail clickable -->
-                            <div class="cursor-pointer clickable-container" data-href="{% url 'ai_video_detail' video.pk %}">
-                                <!-- Video preview with dynamic thumbnail -->
-                                <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
-                                    <!-- Canvas for thumbnail -->
-                                    <canvas class="w-full h-48 object-cover bg-gray-100 rounded-md"></canvas>
-
-                                    <!-- Play button overlay -->
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <div class="bg-black bg-opacity-30 rounded-full p-3">
-                                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ video.title|default:"Untitled AI Video" }}</h4>
-                                {% if video.prompt_used %}
-                                    <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ video.prompt_used }}</p>
-                                {% endif %}
-                            </div>
-                            <div class="flex justify-between items-center mt-2">
-                                <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
-                                <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                                    By {{ video.user.username }}
-                                </a>
-                            </div>
-                            <a href="{% url 'ai_video_detail' video.pk %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">
-                                Watch full video →
-                            </a>
-                        </div>
-                    {% empty %}
-
-                            <div class="p-4 text-center text-gray-500">
-                                <p>No AI videos available.</p>
-                                <a href="{% url 'ai_video_gallery' %}" class="text-indigo-600 hover:underline text-sm mt-2 inline-block">Browse all AI videos →</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-                <!-- View All AI Content Links -->
-                <div class="mt-4 flex justify-center space-x-6">
-                    <a href="{% url 'ai_image_gallery' %}" class="text-purple-600 hover:text-purple-800 font-medium">
-                        All AI Images →
-                    </a>
-                    <a href="{% url 'ai_video_gallery' %}" class="text-indigo-600 hover:text-indigo-800 font-medium">
-                        All AI Videos →
-                    </a>
-                </div>
-            </div>
+        <!-- View All AI Content Links -->
+        <div class="mt-4 flex justify-center space-x-6">
+            <a href="{% url 'ai_image_gallery' %}" class="text-purple-600 hover:text-purple-800 font-medium">
+                All AI Images →
+            </a>
+            <a href="{% url 'ai_video_gallery' %}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                All AI Videos →
+            </a>
+        </div>
+    </div>
 
     <!-- 📰 Main News Section -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
         <!-- 🌟 Featured Article (Largest) -->
         <div class="md:col-span-2 bg-white shadow-lg rounded-lg overflow-hidden">
             {% if articles %}
                 <div class="p-4 sm:p-6">
                     {% if articles.0.moderation_status == 'approved' or user.is_staff %}
-                        {% if articles.0.category == "AI Image" %}
-                            <!-- 🧠 AI Generated Image Display -->
-                            <img src="{{ articles.0.image.url }}" class="w-full h-64 sm:h-96 object-contain rounded-lg bg-gray-100" alt="{{ articles.0.title }}">
-                            <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-base sm:text-lg italic">AI-generated image description:</p>
-                            <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
+                        <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' articles.0.pk %}">
+                            {% if articles.0.category == "AI Image" %}
+                                <!-- 🧠 AI Generated Image Display -->
+                                <img src="{{ articles.0.image.url }}" class="w-full h-64 sm:h-96 object-contain rounded-lg bg-gray-100" alt="{{ articles.0.title }}">
+                                <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                                <p class="text-gray-600 mt-2 text-base sm:text-lg italic">AI-generated image description:</p>
+                                <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
 
-                        {% elif articles.0.category == "AI Video" %}
-                            <!-- 🎥 AI Generated Video Embed -->
-                            <video controls class="w-full rounded-lg bg-black h-64 sm:h-96 mt-2">
-                                <source src="{{ articles.0.video.url }}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                            <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-base sm:text-lg italic">AI-generated video description:</p>
-                            <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
+                            {% elif articles.0.category == "AI Video" %}
+                                <!-- 🎥 AI Generated Video Embed -->
+                                <video controls class="w-full rounded-lg bg-black h-64 sm:h-96 mt-2">
+                                    <source src="{{ articles.0.video.url }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                                <p class="text-gray-600 mt-2 text-base sm:text-lg italic">AI-generated video description:</p>
+                                <p class="text-gray-600">{{ articles.0.body|linebreaksbr }}</p>
 
-                        {% else %}
-                            <!-- 📰 Standard News -->
-                            {% if articles.0.image %}
-                                <img src="{{ articles.0.image.url }}" class="w-full h-48 sm:h-64 object-cover object-center rounded-lg" alt="{{ articles.0.title }}">
+                            {% else %}
+                                <!-- 📰 Standard News -->
+                                {% if articles.0.image %}
+                                    <img src="{{ articles.0.image.url }}" class="w-full h-48 sm:h-64 object-cover object-center rounded-lg" alt="{{ articles.0.title }}">
+                                {% endif %}
+                                <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
+                                <p class="text-gray-600 mt-2 text-base sm:text-lg">{{ articles.0.body|linebreaksbr }}</p>
                             {% endif %}
-                            <h2 class="text-xl sm:text-3xl font-bold text-gray-900 mt-4">{{ articles.0.title }}</h2>
-                            <p class="text-gray-600 mt-2 text-base sm:text-lg">{{ articles.0.body|linebreaksbr }}</p>
-                        {% endif %}
+                        </div>
 
                         {% if articles.0.moderation_status == 'pending' and user.is_staff %}
                             <div class="mt-2 bg-yellow-100 text-yellow-800 p-2 rounded">
@@ -280,48 +280,49 @@
         {% for article in articles|slice:"5:20" %}
         {% if article.moderation_status == 'approved' or user.is_staff %}
         <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
-            {% if article.category == "AI Image" %}
-                <img src="{{ article.image.url }}" class="w-full h-48 object-contain bg-gray-100" alt="{{ article.title }}">
-            {% elif article.category == "AI Video" %}
-                <video controls class="w-full h-48 bg-black">
-                    <source src="{{ article.video.url }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            {% elif article.image %}
-                <img src="{{ article.image.url }}" class="w-full h-40 object-cover object-center" alt="{{ article.title }}">
-            {% endif %}
-            <div class="p-4 flex-1">
-                <h3 class="text-lg font-semibold text-gray-900">
-                    <a href="{% url 'article_detail' article.pk %}" class="hover:text-emerald-600">
+            <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+                {% if article.category == "AI Image" %}
+                    <img src="{{ article.image.url }}" class="w-full h-48 object-contain bg-gray-100" alt="{{ article.title }}">
+                {% elif article.category == "AI Video" %}
+                    <video controls class="w-full h-48 bg-black">
+                        <source src="{{ article.video.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                {% elif article.image %}
+                    <img src="{{ article.image.url }}" class="w-full h-40 object-cover object-center" alt="{{ article.title }}">
+                {% endif %}
+                <div class="p-4 flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">
                         {{ article.title }}
-                    </a>
-                </h3>
-                <p class="text-sm text-gray-600 mt-2">
-                    {% with article.body|linebreaksbr as body %}
-                        {{ body|slice:":200" }}
-                    {% endwith %}
-                </p>
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-2">
+                        {% with article.body|linebreaksbr as body %}
+                            {{ body|slice:":200" }}
+                        {% endwith %}
+                    </p>
+                    {% if article.moderation_status == 'pending' and user.is_staff %}
+                    <div class="mt-2 bg-yellow-100 text-yellow-800 p-2 rounded text-xs">
+                        <p class="font-medium">Pending Review</p>
+                        <div class="flex mt-1">
+                            <a href="{% url 'approve_article' article.pk %}" class="bg-green-500 text-white px-2 py-0.5 rounded text-xs mr-2">Approve</a>
+                            <a href="{% url 'reject_article' article.pk %}" class="bg-red-500 text-white px-2 py-0.5 rounded text-xs">Reject</a>
+                        </div>
+                    </div>
+                    {% endif %}
 
-                {% if article.moderation_status == 'pending' and user.is_staff %}
-                <div class="mt-2 bg-yellow-100 text-yellow-800 p-2 rounded text-xs">
-                    <p class="font-medium">Pending Review</p>
-                    <div class="flex mt-1">
-                        <a href="{% url 'approve_article' article.pk %}" class="bg-green-500 text-white px-2 py-0.5 rounded text-xs mr-2">Approve</a>
-                        <a href="{% url 'reject_article' article.pk %}" class="bg-red-500 text-white px-2 py-0.5 rounded text-xs">Reject</a>
+                    <div class="mt-3 text-xs text-gray-500">
+                        🕒 {{ article.created_at|date:"M d, Y" }} · ✍️
+                        <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+                            {{ article.user.username }}
+                        </a>
+                        <span class="ml-2">👁️ {{ article.view_count }}</span>
                     </div>
                 </div>
-                {% endif %}
-
-                <a href="{% url 'article_detail' article.pk %}" class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
+            </div>
+            <div class="p-4 pt-0">
+                <a href="{% url 'article_detail' article.pk %}" class="inline-block text-emerald-600 hover:underline font-semibold text-lg">
                     Read More →
                 </a>
-                <div class="mt-3 text-xs text-gray-500">
-                    🕒 {{ article.created_at|date:"M d, Y" }} · ✍️
-                    <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
-                        {{ article.user.username }}
-                    </a>
-                    <span class="ml-2">👁️ {{ article.view_count }}</span>
-                </div>
             </div>
         </div>
         {% endif %}
@@ -333,6 +334,7 @@
     {% endif %}
 
 </div>
+
 <!-- JavaScript for Tab Switching -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
