@@ -549,7 +549,7 @@ def search_results(request):
         'videos': ai_videos,
     })
 
-def ai_image_detail(request, pk):
+def ai_image_detail(request, pk, slug=None):
     image = get_object_or_404(AIImage, pk=pk)
     # Make sure to query the comments
     comments = ImageComment.objects.filter(image=image).order_by('-created_at')
@@ -560,7 +560,7 @@ def ai_image_detail(request, pk):
         'categories': CATEGORIES,
     })
 
-def ai_video_detail(request, pk):
+def ai_video_detail(request, pk, slug=None):
     video = get_object_or_404(AIVideo, pk=pk)
     comments = video.comments.all()  # Get all comments
     return render(request, 'articles/ai_video_detail.html', {
