@@ -29,6 +29,7 @@ urlpatterns = [
     path('ai-videos/<int:pk>-<slug:slug>/comment/', views.add_video_comment, name='add_video_comment'),
     path('article/<int:pk>-<slug:slug>/approve/', views.approve_article, name='approve_article'),
     path('article/<int:pk>-<slug:slug>/reject/', views.reject_article, name='reject_article'),
+    path('article/<int:pk>/like/', views.like_article, name='like_article'),
 
     path('create/article/', views.new_article, name='new_article'),  # This is for standard form
     path('create/article/ajax/', views.create_article, name='create_article'),  # This is for AJAX requests

@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.views.decorators.http import require_POST
 from articles.models import get_category_dict
 from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict, SiteSettings
 from .forms import ArticleForm, CommentForm
@@ -645,3 +646,13 @@ def reject_article(request, pk):
     messages.success(request, f"Article '{article.title}' has been rejected.")
     return redirect('article_detail', pk=pk)
 
+@require_POST
+@csrf_exempt
+def like_article(request, pk):
+    try:
+        article = Article.objects.get(pk=pk)
+        article.likes += 1
+        article.save()
+        return JsonResponse({'status': 'success', 'likes': article.likes})
+    except Article.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Article not found'}, status=404)
