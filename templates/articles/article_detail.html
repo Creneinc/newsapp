@@ -8,7 +8,7 @@
     <!-- 📰 Article Title -->
     <h1 class="text-4xl font-bold text-gray-900 leading-tight">{{ article.title }}</h1>
 
-    <!-- Author info with link to public profile -->
+    <!-- Author Info -->
     <p class="text-sm text-gray-500 mt-2">
         Published on {{ article.created_at|date:"F d, Y" }} by
         <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
@@ -16,24 +16,23 @@
         </a>
     </p>
 
-    <!-- 📸 Featured Image -->
+    <!-- Featured Image -->
     {% if article.image %}
-        <img src="{{ article.image.url }}" class="w-full rounded-lg mt-6 shadow-md" alt="{{ article.title }}">
+    <img src="{{ article.image.url }}" class="w-full rounded-lg mt-6 shadow-md" alt="{{ article.title }}">
     {% endif %}
 
-    <!-- 📝 Article Content (Fixed Formatting) -->
+    <!-- Article Body -->
     <div id="article-body" class="mt-6 text-lg text-gray-800 space-y-6">
         {% if article.body == "⏳ Generating article..." %}
-            <!-- Loading spinner or message for generating -->
-            <div id="loading-message" class="text-center text-emerald-600 font-semibold">
-                Still generating the article... Please wait.
-            </div>
+        <div id="loading-message" class="text-center text-emerald-600 font-semibold">
+            Still generating the article... Please wait.
+        </div>
         {% else %}
-            {{ article.body|linebreaks }}
+        {{ article.body|linebreaks }}
         {% endif %}
     </div>
 
-    <!-- 💖 Like Button -->
+    <!-- ❤️ Like Button -->
     <div class="mt-4 flex items-center gap-2">
         <button id="like-button" class="flex items-center text-gray-500 hover:text-emerald-600 focus:outline-none transition">
             <svg id="heart-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,7 +44,7 @@
         <span class="text-sm text-gray-400">Likes</span>
     </div>
 
-    <!-- 🔹 Edit & Delete (Only for Author) -->
+    <!-- ✏️ Edit & Delete -->
     {% if user == article.user %}
     <div class="flex gap-4 mt-6">
         <a href="{% url 'edit_article' article.pk article.title|slugify %}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
@@ -60,46 +59,45 @@
     </div>
     {% endif %}
 
-    <!-- 🔗 Back to Home -->
+    <!-- ⬅ Back -->
     <a href="{% url 'article_list' %}" class="block mt-6 text-emerald-600 hover:underline">
         ⬅ Back to News
     </a>
 
-    <!-- Comment Section -->
+    <!-- 💬 Comments -->
     <div class="mt-12 bg-gray-50 p-6 rounded-lg shadow-md">
         <h3 class="text-2xl font-bold text-gray-900 mb-4">Leave a Comment</h3>
+
         <form method="POST" class="space-y-4">
             {% csrf_token %}
-            <!-- Use the comment form to display the textarea and handle submission -->
             <textarea name="content" rows="4" class="w-full p-4 border rounded-md text-gray-700 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Write your comment here..." required></textarea>
             <button type="submit" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition">
                 Post Comment
             </button>
         </form>
 
-        <!-- Display existing comments -->
         <div class="mt-8 space-y-4">
             <h4 class="text-xl font-semibold text-gray-900">Comments</h4>
             {% for comment in comments %}
-                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-500">
-                    <div class="mb-3">
-                        <a href="{% url 'public_profile' comment.user.username %}" class="font-semibold text-gray-800 hover:text-emerald-600">
-                            {{ comment.user.username }}
-                        </a>
-                        <p class="text-sm text-gray-500">{{ comment.created_at|date:"F d, Y" }}</p>
-                    </div>
-                    <p class="text-gray-600">{{ comment.content }}</p>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-500">
+                <div class="mb-3">
+                    <a href="{% url 'public_profile' comment.user.username %}" class="font-semibold text-gray-800 hover:text-emerald-600">
+                        {{ comment.user.username }}
+                    </a>
+                    <p class="text-sm text-gray-500">{{ comment.created_at|date:"F d, Y" }}</p>
                 </div>
+                <p class="text-gray-600">{{ comment.content }}</p>
+            </div>
             {% empty %}
-                <p class="text-gray-500">No comments yet. Be the first to comment!</p>
+            <p class="text-gray-500">No comments yet. Be the first to comment!</p>
             {% endfor %}
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
-    // Polling for article generation status
     function checkArticleGenerationStatus() {
         const articleId = {{ article.id }};
         fetch(`/check_article_status/${articleId}/`)
@@ -112,23 +110,22 @@
                     setTimeout(checkArticleGenerationStatus, 3000);
                 }
             })
-            .catch(error => {
-                console.error('Error checking article status:', error);
-            });
+            .catch(error => console.error('Error checking article status:', error));
     }
 
     {% if article.body == "⏳ Generating article..." %}
         checkArticleGenerationStatus();
     {% endif %}
 
-    // Like button functionality
-    document.getElementById("like-button").addEventListener("click", function () {
+    document.getElementById("like-button").addEventListener("click", function (e) {
+        e.preventDefault();
+
         fetch("{% url 'like_article' article.pk %}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
+                "X-CSRFToken": getCookie('csrftoken')
+            }
         })
         .then(response => response.json())
         .then(data => {
@@ -139,7 +136,20 @@
         })
         .catch(error => console.error("Like error:", error));
     });
-</script>
-{% endblock %}
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
 {% endblock %}

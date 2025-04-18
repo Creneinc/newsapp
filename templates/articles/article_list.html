@@ -28,9 +28,14 @@
                         <h3 class="text-md font-semibold text-gray-900 line-clamp-2">
                             {{ article.title }}
                         </h3>
-                        <div class="mt-2 text-xs text-gray-500 flex items-center">
-                            <span class="mr-2">👁️ {{ article.view_count }}</span>
-                            <span>❤️ {{ article.likes }}</span>
+                        <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+                            <span>👁️ {{ article.view_count }} views</span>
+                            <span class="flex items-center gap-1">
+                                <button class="like-article-btn text-red-500 hover:scale-110 transition" data-id="{{ article.pk }}">
+                                    ❤️
+                                </button>
+                                <span id="like-count-{{ article.pk }}">{{ article.likes }}</span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -96,6 +101,17 @@
                                 By {{ image.user.username }}
                             </a>
                         </div>
+                        <div class="mt-1 text-xs text-gray-500 flex justify-between items-center">
+                            <span>👁️ {{ image.view_count }} views</span>
+                            <div class="flex items-center gap-1">
+                                <button class="like-btn text-red-500 hover:scale-110 transition"
+                                        data-id="{{ image.pk }}"
+                                        data-type="image">
+                                    ❤️
+                                </button>
+                                <span id="like-count-image-{{ image.pk }}">{{ image.likes }}</span>
+                            </div>
+                        </div>
                         <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
                             View full image →
                         </a>
@@ -145,6 +161,17 @@
                             <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
                                 By {{ video.user.username }}
                             </a>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 flex justify-between items-center">
+                            <span>👁️ {{ video.view_count }} views</span>
+                            <div class="flex items-center gap-1">
+                                <button class="like-btn text-red-500 hover:scale-110 transition"
+                                        data-id="{{ video.pk }}"
+                                        data-type="video">
+                                    ❤️
+                                </button>
+                                <span id="like-count-video-{{ video.pk }}">{{ video.likes }}</span>
+                            </div>
                         </div>
                         <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">
                             Watch full video →
@@ -452,5 +479,97 @@
         });
     });
 </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".like-article-btn").forEach(button => {
+        button.addEventListener("click", function () {
+          const articleId = this.dataset.id;
+          fetch(`/articles/${articleId}/like/`, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken"),
+              "Content-Type": "application/json"
+            }
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === "success") {
+              document.getElementById(`like-count-${articleId}`).textContent = data.likes;
+              button.disabled = true;
+              button.textContent = "❤️ Liked";
+            } else {
+              alert(data.message || "Failed to like the article.");
+            }
+          })
+          .catch(err => console.error("Like error:", err));
+        });
+      });
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+    });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const likeButtons = document.querySelectorAll('.like-btn');
+
+          likeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+              const id = button.dataset.id;
+              const type = button.dataset.type;
+              const url = type === 'image' ? `/ai-images/${id}/like/` : `/ai-videos/${id}/like/`;
+
+              fetch(url, {
+                method: 'POST',
+                headers: {
+                  'X-CSRFToken': getCookie('csrftoken'),
+                  'Content-Type': 'application/json',
+                }
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'success') {
+                  const countElement = document.getElementById(`like-count-${type}-${id}`);
+                  countElement.textContent = data.likes;
+                  button.disabled = true;
+                  button.textContent = '❤️ Liked';
+                } else {
+                  alert(data.message || 'Something went wrong.');
+                }
+              })
+              .catch(() => alert('Failed to send like.'));
+            });
+          });
+
+          function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+            }
+            return cookieValue;
+          }
+        });
+        </script>
 
 {% endblock %}

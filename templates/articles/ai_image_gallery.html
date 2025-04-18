@@ -7,69 +7,114 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for image in images %}
       <div class="relative">
-        <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}" class="block">
-          <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
-            <img src="{{ image.image.url }}" alt="AI Image" class="w-full h-48 object-cover bg-gray-100">
-            <div class="p-4">
-              <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ image.title }}</h2>
-              {% if image.prompt_used %}
-                <p class="text-sm text-gray-600 line-clamp-2">{{ image.prompt_used }}</p>
-              {% endif %}
-              <div class="flex justify-between items-center mt-2">
-                <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
-                <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                  By {{ image.user.username }}
-                </a>
-              </div>
+        <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
+          <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
+            <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full h-48 object-cover bg-gray-100">
+          </a>
 
-              <!-- 🔢 View Count & ❤️ Like Count -->
-              <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
-                <div>👁️ {{ image.view_count }} views</div>
-                <div class="flex items-center gap-1">
-                  <form method="post" action="{% url 'like_ai_image' image.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="text-red-500 hover:scale-110 transition">❤️</button>
-                  </form>
-                  <span>{{ image.likes }}</span>
-                </div>
+          <div class="p-4">
+            <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ image.title }}</h2>
+            {% if image.prompt_used %}
+              <p class="text-sm text-gray-600 line-clamp-2">{{ image.prompt_used }}</p>
+            {% endif %}
+
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
+              <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                By {{ image.user.username }}
+              </a>
+            </div>
+
+            <!-- 👁️ View Count & ❤️ Like Count -->
+            <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+              <div>👁️ {{ image.view_count }} views</div>
+              <div class="flex items-center gap-1">
+                <button class="like-btn text-red-500 hover:scale-110 transition"
+                        data-id="{{ image.pk }}">
+                  ❤️
+                </button>
+                <span id="like-count-{{ image.pk }}">{{ image.likes }}</span>
               </div>
             </div>
           </div>
-        </a>
+        </div>
 
-        <!-- Delete Button (Only for the creator of the image) -->
         {% if image.user == user %}
-          <form action="{% url 'delete_ai_image' image.pk %}" method="post" class="absolute top-0 right-0 m-2">
-            {% csrf_token %}
-            <button type="submit" class="px-1 py-0.5 bg-red-600 text-white rounded-full hover:bg-red-700">
-              🗑
-            </button>
-          </form>
+        <form action="{% url 'delete_ai_image' image.pk %}" method="post" class="absolute top-0 right-0 m-2">
+          {% csrf_token %}
+          <button type="submit" class="px-1 py-0.5 bg-red-600 text-white rounded-full hover:bg-red-700">
+            🗑
+          </button>
+        </form>
         {% endif %}
       </div>
       {% endfor %}
     </div>
 
-    <!-- Pagination -->
     {% if page_obj.has_other_pages %}
     <div class="mt-8 flex justify-center space-x-2">
       {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
       {% endif %}
-
       <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
-
       {% if page_obj.has_next %}
         <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
       {% endif %}
     </div>
     {% endif %}
-
   {% else %}
     <div class="text-center text-gray-500 text-lg mt-10">
       <p>No AI images uploaded yet. Be the first to share something amazing!</p>
     </div>
   {% endif %}
 </div>
+
+<!-- ❤️ Like Button AJAX Handler -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const likeButtons = document.querySelectorAll('.like-btn');
+
+  likeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const imageId = button.dataset.id;
+
+      fetch(`/ai-images/${imageId}/like/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const countEl = document.getElementById(`like-count-${imageId}`);
+          countEl.textContent = data.likes;
+          button.disabled = true;
+          button.textContent = '❤️ Liked';
+        } else {
+          alert(data.message || 'Something went wrong.');
+        }
+      })
+      .catch(() => alert('Failed to send like.'));
+    });
+  });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+</script>
 
 {% endblock %}

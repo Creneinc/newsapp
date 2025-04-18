@@ -29,11 +29,11 @@
           👁️ <span>{{ image.view_count }} views</span>
         </div>
         <div class="flex items-center gap-2">
-          <form method="post" action="{% url 'like_ai_image' image.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="hover:scale-110 text-red-500">❤️</button>
-          </form>
-          <span>{{ image.likes }}</span>
+          <button
+            class="like-btn text-red-500 hover:scale-110 transition"
+            data-id="{{ image.pk }}"
+          >❤️</button>
+          <span id="like-count-{{ image.pk }}">{{ image.likes }}</span>
         </div>
       </div>
 
@@ -99,4 +99,51 @@
     </div>
   </div>
 </div>
+
+<!-- 💡 AJAX for Like -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const likeBtn = document.querySelector('.like-btn');
+
+  if (likeBtn) {
+    likeBtn.addEventListener('click', () => {
+      const imageId = likeBtn.dataset.id;
+
+      fetch(`/ai-images/${imageId}/like/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        },
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          document.getElementById(`like-count-${imageId}`).textContent = data.likes;
+          likeBtn.disabled = true;
+          likeBtn.textContent = '❤️ Liked';
+        } else {
+          alert(data.message || 'Something went wrong.');
+        }
+      })
+      .catch(() => alert('Failed to like the image.'));
+    });
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie) {
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const trimmed = cookie.trim();
+        if (trimmed.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(trimmed.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+</script>
 {% endblock %}

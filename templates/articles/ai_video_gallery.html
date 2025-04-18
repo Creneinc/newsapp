@@ -6,50 +6,44 @@
   {% if videos %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for video in videos %}
-      <div class="relative">
-        <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}" class="block">
-          <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
-
-            <!-- Video preview with dynamic thumbnail -->
+      <div class="relative group">
+        <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
+          <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
             <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
               <canvas class="w-full h-48 object-cover bg-gray-100"></canvas>
-
-              <!-- Play button overlay -->
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="bg-black bg-opacity-30 rounded-full p-3">
-                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
                   </svg>
                 </div>
               </div>
             </div>
+          </a>
 
-            <!-- Info -->
-            <div class="p-4">
-              <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">
-                {{ video.title|default:"Untitled AI Video" }}
-              </h2>
+          <div class="p-4">
+            <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ video.title|default:"Untitled AI Video" }}</h2>
+            {% if video.prompt_used %}
+              <p class="text-sm text-gray-600 line-clamp-2">{{ video.prompt_used }}</p>
+            {% endif %}
 
-              {% if video.prompt_used %}
-                <p class="text-sm text-gray-600 line-clamp-2">{{ video.prompt_used }}</p>
-              {% endif %}
+            <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+              <span>👁️ {{ video.view_count }} views</span>
+              <span class="flex items-center gap-1">
+                <button class="like-btn text-red-500 hover:scale-110 transition" data-id="{{ video.pk }}">❤️</button>
+                <span id="like-count-{{ video.pk }}">{{ video.likes }}</span>
+              </span>
+            </div>
 
-              <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
-                <span>👁️ {{ video.view_count }} views</span>
-                <span>❤️ {{ video.likes }}</span>
-              </div>
-
-              <div class="flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
-                <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                  By {{ video.user.username }}
-                </a>
-              </div>
+            <div class="flex justify-between items-center mt-1">
+              <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
+              <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                By {{ video.user.username }}
+              </a>
             </div>
           </div>
-        </a>
+        </div>
 
-        <!-- Delete Button (Only for the creator) -->
         {% if video.user == user %}
           <form action="{% url 'delete_ai_video' video.pk %}" method="post" class="absolute top-0 right-0 m-2">
             {% csrf_token %}
@@ -62,21 +56,17 @@
       {% endfor %}
     </div>
 
-    <!-- Pagination -->
     {% if page_obj.has_other_pages %}
       <div class="mt-8 flex justify-center space-x-2">
         {% if page_obj.has_previous %}
           <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
         {% endif %}
-
         <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
-
         {% if page_obj.has_next %}
           <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
         {% endif %}
       </div>
     {% endif %}
-
   {% else %}
     <div class="text-center text-gray-500 text-lg mt-10">
       <p>No AI videos uploaded yet. Be the first to share something cinematic!</p>
@@ -84,43 +74,50 @@
   {% endif %}
 </div>
 
-<!-- 🖼 Script for generating video thumbnails -->
+<!-- 🔧 Script: Video thumbnails & Like functionality -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
-
-  thumbnailContainers.forEach(container => {
+document.addEventListener('DOMContentLoaded', () => {
+  const containers = document.querySelectorAll('.video-thumbnail-container');
+  containers.forEach(container => {
     const videoUrl = container.dataset.videoUrl;
     const canvas = container.querySelector('canvas');
     const context = canvas.getContext('2d');
-
     const video = document.createElement('video');
     video.crossOrigin = 'anonymous';
     video.src = videoUrl + '#t=1.0';
     canvas.width = 320;
     canvas.height = 180;
 
-    video.addEventListener('loadeddata', () => {
-      video.currentTime = 1.0;
-    });
-
+    video.addEventListener('loadeddata', () => video.currentTime = 1);
     video.addEventListener('seeked', () => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
+      video.pause(); video.removeAttribute('src'); video.load();
     });
-
     video.addEventListener('error', () => {
       const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#10b981');
-      gradient.addColorStop(1, '#047857');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.font = '24px Arial';
-      context.fillStyle = 'white';
-      context.textAlign = 'center';
+      gradient.addColorStop(0, '#10b981'); gradient.addColorStop(1, '#047857');
+      context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.font = '24px Arial'; context.fillStyle = 'white'; context.textAlign = 'center';
       context.fillText('AI Video', canvas.width / 2, canvas.height / 2);
+    });
+  });
+
+  // ❤️ AJAX Like Handling
+  const likeButtons = document.querySelectorAll('.like-btn');
+  likeButtons.forEach(button => {
+    button.addEventListener('click', e => {
+      const pk = button.dataset.id;
+      fetch(`/ai-videos/${pk}/like/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById(`like-count-${pk}`).textContent = data.likes;
+      });
     });
   });
 });
