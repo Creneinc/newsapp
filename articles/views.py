@@ -258,30 +258,42 @@ def article_list(request):
         else:
             articles = articles.filter(category=category)
 
-    # Get popular articles
-    popular_articles = Article.objects.filter(
+    # Get manually selected trending articles first
+    trending_articles = Article.objects.filter(
+        is_trending=True,
         moderation_status='approved'
-    ).order_by('-view_count', '-created_at')[:4]
+    ).order_by('-created_at')
+
+    # If we don't have enough trending articles, supplement with popular ones
+    if trending_articles.count() < 4:
+        # Get popular articles based on view count
+        popular_articles = Article.objects.filter(
+            moderation_status='approved'
+        ).exclude(
+            id__in=[a.id for a in trending_articles]
+        ).order_by('-view_count', '-created_at')[:4-trending_articles.count()]
+
+        # Combine the two querysets
+        popular_articles = list(trending_articles) + list(popular_articles)
+    else:
+        popular_articles = trending_articles[:4]
 
     # Get recommended articles
     if request.user.is_authenticated:
         # Add your recommendation logic here
         recommended_articles = Article.objects.filter(
             moderation_status='approved'
-        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
+        ).exclude(
+            id__in=[a.id for a in popular_articles]
+        ).order_by('-created_at')[:4]
     else:
         recommended_articles = []
 
-    # Get AI content
-    ai_images = Article.objects.filter(
-        category='AI Image',
-        moderation_status='approved'
-    ).order_by('-created_at')[:1]
+    # Get AI content from their respective models
+    from .models import AIImage, AIVideo  # Import the correct models
 
-    ai_videos = Article.objects.filter(
-        category='AI Video',
-        moderation_status='approved'
-    ).order_by('-created_at')[:1]
+    ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
+    ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
     context = {
         'articles': articles,
