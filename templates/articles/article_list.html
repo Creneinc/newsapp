@@ -96,7 +96,7 @@
                                 By {{ image.user.username }}
                             </a>
                         </div>
-                        <a href="{% url 'ai_image_detail' image.pk %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
+                        <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
                             View full image →
                         </a>
                     </div>
