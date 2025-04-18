@@ -326,7 +326,6 @@
     {% endif %}
 
 </div>
-
 <!-- JavaScript for Tab Switching -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -355,60 +354,61 @@
             popularArticles.classList.add('hidden');
         });
     });
+</script>
 
-    <!-- Script for generating video thumbnails -->
-    <script>
+<!-- Script for generating video thumbnails -->
+<script>
     document.addEventListener('DOMContentLoaded', function() {
-    // Get all video thumbnail containers
-    const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
+        // Get all video thumbnail containers
+        const thumbnailContainers = document.querySelectorAll('.video-thumbnail-container');
 
-    // Process each container
-    thumbnailContainers.forEach(container => {
-        const videoUrl = container.dataset.videoUrl;
-        const canvas = container.querySelector('canvas');
-        const context = canvas.getContext('2d');
+        // Process each container
+        thumbnailContainers.forEach(container => {
+            const videoUrl = container.dataset.videoUrl;
+            const canvas = container.querySelector('canvas');
+            const context = canvas.getContext('2d');
 
-        // Create temporary video element
-        const video = document.createElement('video');
-        video.crossOrigin = 'anonymous';
-        video.src = videoUrl + '#t=1.0'; // Seek to 1 second
+            // Create temporary video element
+            const video = document.createElement('video');
+            video.crossOrigin = 'anonymous';
+            video.src = videoUrl + '#t=1.0'; // Seek to 1 second
 
-        // Set canvas dimensions
-        canvas.width = 320;
-        canvas.height = 180;
+            // Set canvas dimensions
+            canvas.width = 320;
+            canvas.height = 180;
 
-        // Once video can play, capture the frame
-        video.addEventListener('loadeddata', function() {
-        // Try to seek to a specific time
-        video.currentTime = 1.0; // 1 second in
+            // Once video can play, capture the frame
+            video.addEventListener('loadeddata', function() {
+                // Try to seek to a specific time
+                video.currentTime = 1.0; // 1 second in
+            });
+
+            video.addEventListener('seeked', function() {
+                // Draw the video frame on the canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Clean up
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            });
+
+            // Handle errors - fill with gradient if thumbnail fails
+            video.addEventListener('error', function() {
+                // Create gradient background as fallback
+                const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#10b981');  // emerald-500
+                gradient.addColorStop(1, '#047857');  // emerald-700
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Add video text
+                context.font = '24px Arial';
+                context.fillStyle = 'white';
+                context.textAlign = 'center';
+                context.fillText('AI Video', canvas.width/2, canvas.height/2);
+            });
         });
-
-        video.addEventListener('seeked', function() {
-        // Draw the video frame on the canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Clean up
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-        });
-
-        // Handle errors - fill with gradient if thumbnail fails
-        video.addEventListener('error', function() {
-        // Create gradient background as fallback
-        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#10b981');  // emerald-500
-        gradient.addColorStop(1, '#047857');  // emerald-700
-        context.fillStyle = gradient;
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Add video text
-        context.font = '24px Arial';
-        context.fillStyle = 'white';
-        context.textAlign = 'center';
-        context.fillText('AI Video', canvas.width/2, canvas.height/2);
-        });
-    });
     });
 </script>
 {% endblock %}
