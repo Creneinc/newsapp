@@ -10,7 +10,7 @@ from django.http import JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.utils.text import slugify
 from articles.models import get_category_dict
-from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict
+from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict, SiteSettings
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
 from django.template.loader import render_to_string
@@ -141,8 +141,7 @@ def generate_article_with_groq(title, summary, category):
 
     return None
 
-
-# 📝 AJAX Article Creation
+# 📜 AJAX Article Creation
 @login_required
 def create_article(request):
     if request.method != 'POST':
@@ -158,19 +157,21 @@ def create_article(request):
 
         image = request.FILES.get('image')
 
+        # ✅ Fetch site-wide setting
+        site_settings = SiteSettings.objects.first()
+        auto_approve = site_settings.auto_approve_articles if site_settings else False
+
         article = Article.objects.create(
             user=request.user,
             title=title,
             summary=summary,
             category=category,
-            image=image,  # <- ✅ include image here
-            body="⏳ Generating article..."
+            image=image,
+            body="⏳ Generating article...",
+            moderation_status='approved' if auto_approve else 'pending',
         )
 
-        # First try with Groq
         content = generate_article_with_groq(title, summary, category)
-
-        # If Groq fails, fallback to Ollama
         if not content:
             logger.info("Fallback to local Mistral (Ollama)...")
             content = generate_article_with_ollama(title, summary, category)
@@ -250,6 +251,7 @@ def stream_article_generation(request):
 
     return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
+
 # Check status of article generation task via AJAX
 @login_required
 def check_article_status(request):
@@ -294,9 +296,24 @@ def home_view(request):
     categories = get_category_dict()
     articles = Article.objects.filter(moderation_status='approved').order_by('-created_at')
 
-    popular_articles = Article.objects.filter(
-        moderation_status='approved'
-    ).order_by('-view_count', '-created_at')[:4]
+    trending_manual = list(Article.objects.filter(moderation_status='approved', is_trending=True).order_by('-created_at')[:8])
+
+    if len(trending_manual) < 8:
+        fill_count = 8 - len(trending_manual)
+        additional = Article.objects.filter(moderation_status='approved')\
+            .exclude(id__in=[a.id for a in trending_manual])\
+            .order_by('-view_count')[:fill_count]
+        popular_articles = trending_manual + list(additional)
+    else:
+        popular_articles = trending_manual
+
+    # Recommendation logic (excluding already shown articles)
+    recommended_articles = []
+    if request.user.is_authenticated:
+        exclude_ids = [a.id for a in popular_articles]
+        recommended_articles = Article.objects.filter(moderation_status='approved')\
+            .exclude(id__in=exclude_ids)\
+            .order_by('-created_at')[:4]
 
     recommended_articles = []
     if request.user.is_authenticated:

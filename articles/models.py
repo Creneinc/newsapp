@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 class Article(models.Model):
     CATEGORY_CHOICES = [
         ("General", "General"),
@@ -132,3 +133,27 @@ class VideoComment(models.Model):
 
 def get_category_dict():
     return dict(Article.CATEGORY_CHOICES)
+
+class SiteSettings(models.Model):
+    auto_approve_articles = models.BooleanField(default=False)
+    auto_approve_images = models.BooleanField(default=False)
+    auto_approve_videos = models.BooleanField(default=False)
+    site_offline_mode = models.BooleanField(default=False)
+    default_category = models.CharField(max_length=50, default="General")
+    enable_article_generation = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        if SiteSetting.objects.exists() and not self.pk:
+            raise ValidationError("There can only be one SiteSetting instance.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Global Site Settings"
+
+    @staticmethod
+    def get():
+        return SiteSetting.objects.first()
+
+    class Meta:
+        verbose_name = "Site Setting"
+        verbose_name_plural = "Site Settings"
