@@ -248,53 +248,42 @@ def article_list(request):
     category = request.GET.get('category')
     show_all = request.GET.get('show_all')
 
+    # Special case for "category=All"
+    if category == 'All':
+        category = None
+        show_all = 'true'
+
     # Determine if this is the main page
     is_main_page = (category is None and request.path == '/') or show_all == 'true'
 
     # Get all articles
     articles = Article.objects.all().order_by('-created_at')
 
-    # Apply category filter if provided (but not if show_all is true)
-    if category and show_all != 'true':
-        if ',' in category:
-            categories = category.split(',')
-            articles = articles.filter(category__in=categories)
-        else:
-            articles = articles.filter(category=category)
+    # Apply category filter if needed
+    if category and category != 'All':
+        articles = articles.filter(category=category)
 
-    # Initialize all required variables
-    try:
-        # Get popular articles
-        popular_articles = Article.objects.filter(
-            moderation_status='approved'
-        ).order_by('-view_count', '-created_at')[:4]
-    except Exception as e:
-        print(f"Error getting popular articles: {e}")
-        popular_articles = []
+    # Get popular articles
+    popular_articles = Article.objects.filter(
+        moderation_status='approved'
+    ).order_by('-view_count', '-created_at')[:4]
 
     # Get recommended articles
-    try:
-        if request.user.is_authenticated:
-            recommended_articles = Article.objects.filter(
-                moderation_status='approved'
-            ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
-        else:
-            recommended_articles = []
-    except Exception as e:
-        print(f"Error getting recommended articles: {e}")
+    if request.user.is_authenticated:
+        recommended_articles = Article.objects.filter(
+            moderation_status='approved'
+        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
+    else:
         recommended_articles = []
 
     # Get AI content
-    try:
-        from .models import AIImage, AIVideo  # Make sure to import these properly
-        ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
-        ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
-    except Exception as e:
-        print(f"Error getting AI content: {e}")
-        ai_images = []
-        ai_videos = []
+    from .models import AIImage, AIVideo  # Move this import to the top of your file
+    ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
+    ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
-    # Create the context dictionary
+    # Get categories for the filter
+    CATEGORIES = get_category_dict()  # Use your existing function
+
     context = {
         'articles': articles,
         'popular_articles': popular_articles,
