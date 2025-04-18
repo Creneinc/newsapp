@@ -18,19 +18,19 @@
         <div id="popular-articles" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {% for article in popular_articles|slice:":4" %}
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                {% if article.image %}
-                    <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
-                {% endif %}
-                <div class="p-3">
-                    <span class="inline-block bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full mb-2">{{ article.category }}</span>
-                    <h3 class="text-md font-semibold text-gray-900 line-clamp-2">
-                        <a href="{% url 'article_detail' article.pk %}" class="hover:text-emerald-600">
+                <div class="cursor-pointer clickable-container" data-href="{% url 'article_detail' article.pk %}">
+                    {% if article.image %}
+                        <img src="{{ article.image.url }}" class="w-full h-32 object-cover object-center" alt="{{ article.title }}">
+                    {% endif %}
+                    <div class="p-3">
+                        <span class="inline-block bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full mb-2">{{ article.category }}</span>
+                        <h3 class="text-md font-semibold text-gray-900 line-clamp-2">
                             {{ article.title }}
-                        </a>
-                    </h3>
-                    <div class="mt-2 text-xs text-gray-500 flex items-center">
-                        <span class="mr-2">👁️ {{ article.view_count }}</span>
-                        <span>❤️ {{ article.likes }}</span>
+                        </h3>
+                        <div class="mt-2 text-xs text-gray-500 flex items-center">
+                            <span class="mr-2">👁️ {{ article.view_count }}</span>
+                            <span>❤️ {{ article.likes }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -80,23 +80,26 @@
             </h3>
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
                 {% for image in ai_images|slice:":1" %}
-                    <div class="p-3">
+                <div class="p-3">
+                    <!-- Make the image clickable -->
+                    <div class="cursor-pointer clickable-container" data-href="{% url 'ai_image_detail' image.pk %}">
                         <img src="{{ image.image.url }}" class="w-full h-48 object-contain rounded-md bg-gray-100" alt="{{ image.title }}">
                         <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ image.title|default:"Untitled AI Image" }}</h4>
                         {% if image.prompt_used %}
                             <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ image.prompt_used }}</p>
                         {% endif %}
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
-                            <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                                By {{ image.user.username }}
-                            </a>
-                        </div>
-                        <a href="{% url 'ai_image_detail' image.pk %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
-                            View full image →
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs text-gray-500">{{ image.generated_at|date:"M d, Y" }}</span>
+                        <a href="{% url 'public_profile' image.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                            By {{ image.user.username }}
                         </a>
                     </div>
-                {% empty %}
+                    <a href="{% url 'ai_image_detail' image.pk %}" class="mt-2 inline-block text-purple-600 hover:underline text-sm">
+                        View full image →
+                    </a>
+                     </div>
+                  {% empty %}
                     <div class="p-4 text-center text-gray-500">
                         <p>No AI images available.</p>
                         <a href="{% url 'ai_image_gallery' %}" class="text-purple-600 hover:underline text-sm mt-2 inline-block">Browse all AI images →</a>
@@ -113,7 +116,9 @@
                     </h3>
                     <div class="bg-white shadow-md rounded-lg overflow-hidden">
                         {% for video in ai_videos|slice:":1" %}
-                            <div class="p-3">
+                        <div class="p-3">
+                            <!-- Make the video thumbnail clickable -->
+                            <div class="cursor-pointer clickable-container" data-href="{% url 'ai_video_detail' video.pk %}">
                                 <!-- Video preview with dynamic thumbnail -->
                                 <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
                                     <!-- Canvas for thumbnail -->
@@ -133,17 +138,19 @@
                                 {% if video.prompt_used %}
                                     <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ video.prompt_used }}</p>
                                 {% endif %}
-                                <div class="flex justify-between items-center mt-2">
-                                    <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
-                                    <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
-                                        By {{ video.user.username }}
-                                    </a>
-                                </div>
-                                <a href="{% url 'ai_video_detail' video.pk %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">
-                                    Watch full video →
+                            </div>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
+                                <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
+                                    By {{ video.user.username }}
                                 </a>
                             </div>
-                        {% empty %}
+                            <a href="{% url 'ai_video_detail' video.pk %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">
+                                Watch full video →
+                            </a>
+                        </div>
+                    {% empty %}
+
                             <div class="p-4 text-center text-gray-500">
                                 <p>No AI videos available.</p>
                                 <a href="{% url 'ai_video_gallery' %}" class="text-indigo-600 hover:underline text-sm mt-2 inline-block">Browse all AI videos →</a>
@@ -326,7 +333,6 @@
     {% endif %}
 
 </div>
-
 <!-- JavaScript for Tab Switching -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -354,6 +360,16 @@
 
             recommendedArticles.classList.remove('hidden');
             popularArticles.classList.add('hidden');
+        });
+
+        // Make image and video containers clickable
+        document.querySelectorAll('.clickable-container').forEach(container => {
+            container.addEventListener('click', function() {
+                const link = this.dataset.href;
+                if (link) {
+                    window.location.href = link;
+                }
+            });
         });
     });
 </script>
