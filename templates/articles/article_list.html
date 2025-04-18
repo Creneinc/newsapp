@@ -224,7 +224,7 @@
                             </a>
                             <span class="ml-2">👁️ {{ articles.0.view_count }} views</span>
                         </div>
-                        <a href="{% url 'article_detail' articles.0.pk %}"
+                        <a href="{% url 'article_detail' articles.0.pk articles.0.title|slugify %}"
                            class="inline-block mt-4 text-emerald-600 hover:underline font-semibold text-lg">
                             Read More →
                         </a>
@@ -244,7 +244,7 @@
                 {% for article in articles|slice:"1:5" %}
                 {% if article.moderation_status == 'approved' or user.is_staff %}
                 <li>
-                    <a href="{% url 'article_detail' article.pk %}" class="block text-gray-800 hover:text-emerald-600 font-medium">
+                    <a href="{% url 'article_detail' article.pk article.title|slugify %}" class="block text-gray-800 hover:text-emerald-600 font-medium">
                         {{ article.title }}
                     </a>
                     <div class="text-xs text-gray-500">
@@ -322,7 +322,7 @@
                 </div>
             </div>
             <div class="p-4 pt-0">
-                <a href="{% url 'article_detail' article.pk %}" class="inline-block text-emerald-600 hover:underline font-semibold text-lg">
+                <a href="{% url 'article_detail' article.pk article.title|slugify %}" class="inline-block text-emerald-600 hover:underline font-semibold text-lg">
                     Read More →
                 </a>
             </div>
