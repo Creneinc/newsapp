@@ -57,7 +57,7 @@
 
       <!-- Comment Form -->
       {% if user.is_authenticated %}
-      <form method="POST" action="{% url 'add_video_comment' video.pk %}" class="mb-6">
+      <form method="POST" action="{% url 'add_video_comment' video.pk video.title|slugify %}" class="mb-6">
         {% csrf_token %}
         <textarea
           name="content"
