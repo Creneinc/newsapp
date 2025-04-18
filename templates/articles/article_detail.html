@@ -36,10 +36,10 @@
     <!-- 🔹 Edit & Delete (Only for Author) -->
     {% if user == article.user %}
     <div class="flex gap-4 mt-6">
-        <a href="{% url 'edit_article' article.pk %}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        <a href="{% url 'edit_article' article.pk article.title|slugify %}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             ✏️ Edit
         </a>
-        <form action="{% url 'delete_article' article.pk %}" method="post" onsubmit="return confirm('Are you sure you want to delete this article?');">
+        <form action="{% url 'delete_article' article.pk article.title|slugify %}" method="post" onsubmit="return confirm('Are you sure you want to delete this article?');">
             {% csrf_token %}
             <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
                 🗑 Delete

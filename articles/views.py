@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.utils import timezone
+from django.utils.text import slugify
 from articles.models import get_category_dict
 from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, get_category_dict
 from .forms import ArticleForm, CommentForm
@@ -51,7 +53,8 @@ def new_article(request):
         'form': form,
         'categories': CATEGORIES,
     })
-def generate_article(title, summary, category):
+
+def generate_article_with_ollama(title, summary, category):
     prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
     if summary:
         prompt += f"Summary: {summary}\n"
@@ -103,107 +106,149 @@ def generate_article(title, summary, category):
     """.strip()
 
 
+def generate_article_with_groq(title, summary, category):
+    prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
+    if summary:
+        prompt += f"Summary: {summary}\n"
+    prompt += "\nOnly write the body of the article. Do not include the title."
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [
+                    {"role": "system", "content": "You are a helpful journalist AI."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "stream": False
+            },
+            timeout=60
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
+        else:
+            logger.warning(f"Groq failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"Groq error: {str(e)}")
+
+    return None
+
+
 # 📝 AJAX Article Creation
 @login_required
 def create_article(request):
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    try:
+        title = request.POST.get('title', '').strip()
+        summary = request.POST.get('summary', '').strip()
+        category = request.POST.get('category', 'General').strip()
+
+        if not title:
+            return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
+
+        image = request.FILES.get('image')
+
+        article = Article.objects.create(
+            user=request.user,
+            title=title,
+            summary=summary,
+            category=category,
+            image=image,  # <- ✅ include image here
+            body="⏳ Generating article..."
+        )
+
+        # First try with Groq
+        content = generate_article_with_groq(title, summary, category)
+
+        # If Groq fails, fallback to Ollama
+        if not content:
+            logger.info("Fallback to local Mistral (Ollama)...")
+            content = generate_article_with_ollama(title, summary, category)
+
+        article.body = content if content else f"⚠️ Generation failed. Here’s your summary:\n\n{summary}"
+        article.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Article created!',
+            'article_id': article.id,
+            'slug': slugify(title)
+        })
+
+    except Exception as e:
+        logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
+        return JsonResponse({'status': 'error', 'message': 'An unexpected error occurred. Please try again.'}, status=500)
+
+@csrf_exempt
+def stream_article_generation(request):
+    if request.method != 'POST' or not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized or invalid request'}, status=403)
+
+    data = json.loads(request.body)
+    title = data.get('title', '').strip()
+    summary = data.get('summary', '').strip()
+    category = data.get('category', 'General').strip()
+    article_id = data.get('article_id')
+
+    if not title or not article_id:
+        return JsonResponse({'error': 'Missing data'}, status=400)
+
+    prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
+    if summary:
+        prompt += f"Summary: {summary}\n"
+    prompt += "\nOnly write the body of the article. Do not include the title."
+
+    def event_stream():
+        yield "data: ⏳ Generating article...\n\n"
         try:
-            logger.info("Received AJAX POST request for article creation.")
-            logger.info(f"FILES: {request.FILES}")
-            logger.info(f"POST data: {request.POST}")
-
-            title = request.POST.get('title', '').strip()
-            summary = request.POST.get('summary', '').strip()
-            category = request.POST.get('category', 'General').strip()
-
-            if not title:
-                logger.warning("Missing title in request.")
-                return JsonResponse({'status': 'error', 'message': 'Title is required!'}, status=400)
-
-            # First, create the article with a "generating" status
-            article = Article.objects.create(
-                user=request.user,
-                title=title,
-                summary=summary,
-                category=category,
-                body="⏳ Generating article..."
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "mixtral-8x7b-32768",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful journalist AI."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "stream": True
+                },
+                stream=True,
+                timeout=60
             )
 
-            try:
-                logger.info("Sending request to Mistral API...")
+            article = Article.objects.get(pk=article_id)
+            full_content = ""
 
-                # Create the prompt
-                prompt = f"Write a full news article in the '{category}' category based on the following details.\n\nTitle: {title}\n"
-                if summary:
-                    prompt += f"Summary: {summary}\n"
-                prompt += "\nOnly write the body of the article. Do not include the title."
+            for line in response.iter_lines():
+                if line and line.startswith(b"data: "):
+                    chunk = json.loads(line[6:])
+                    content = chunk["choices"][0]["delta"].get("content")
+                    if content:
+                        full_content += content
+                        yield f"data: {content}\n\n"
 
-                # OPTION 1: Use stream=False (simpler approach)
-                response = requests.post(
-                    f"{OLLAMA_API_URL}/api/generate",
-                    headers={"Content-Type": "application/json"},
-                    json={
-                        "model": "mistral",
-                        "prompt": prompt,
-                        "stream": False
-                    },
-                    timeout=600
-                )
-
-                logger.info(f"Mistral API responded with status code {response.status_code}")
-
-                if response.status_code == 200:
-                    try:
-                        result = response.json()
-                        article_content = result.get("response", "")
-
-                        # Update the article with the generated content
-                        if len(article_content.strip()) > 50:
-                            article.body = article_content.strip()
-                            article.save()
-                            return JsonResponse({
-                                'status': 'success',
-                                'message': 'Article created successfully!',
-                                'article_id': article.id
-                            })
-                        else:
-                            logger.warning("Mistral returned content that was too short.")
-                            article.body = f"Could not generate article content. Here's your summary:\n\n{summary}"
-                            article.save()
-                    except ValueError as e:
-                        logger.error(f"Error parsing Mistral response as JSON: {e}")
-                        logger.error(f"Raw response: {response.text}")
-                        article.body = f"Error processing AI response: {str(e)}\n\n{summary}"
-                        article.save()
-                else:
-                    logger.error(f"Mistral API error: {response.status_code} - {response.text}")
-                    article.body = f"Error generating content. Status code: {response.status_code}"
-                    article.save()
-
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Request to Mistral failed: {e}")
-                article.body = f"Error connecting to AI service: {str(e)}\n\n{summary}"
+            if full_content:
+                article.body = full_content.strip()
+                article.slug = slugify(title)
                 article.save()
-            except Exception as e:
-                logger.error(f"Unexpected error during Mistral call: {e}")
-                article.body = f"Unexpected error: {str(e)}\n\n{summary}"
-                article.save()
-
-            # Even if we had an error, we created an article, so return success
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Article created (with potential errors).',
-                'article_id': article.id
-            })
 
         except Exception as e:
-            logger.error(f"Unexpected error in create_article: {str(e)}", exc_info=True)
-            return JsonResponse({
-                'status': 'error',
-                'message': 'An unexpected error occurred. Please try again.'
-            }, status=500)
+            yield f"data: ⚠️ Error occurred: {str(e)}\n\n"
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
 # Check status of article generation task via AJAX
 @login_required
@@ -275,27 +320,63 @@ def home_view(request):
     return render(request, 'articles/article_list.html', context)
 
 def article_list(request):
+    # Get query parameters
     category = request.GET.get('category')
-    categories = get_category_dict()
+    show_all = request.GET.get('show_all')
 
+    # Special case for "category=All" - treat as show_all
+    if category == 'All':
+        category = None
+        show_all = 'true'
+
+    # Determine if this is the main page (should show trending and AI showcase)
+    is_main_page = request.path == '/'
+
+    # Get articles
     articles = Article.objects.filter(moderation_status='approved').order_by('-created_at')
-    if category:
+
+    # Apply category filter only if needed
+    if category and category != 'All':
         articles = articles.filter(category=category)
 
+    # Main page sections (Trending + AI Showcase)
+    popular_articles = []
+    recommended_articles = []
+    ai_images = []
+    ai_videos = []
+
+    # Get these for main page only
+    if is_main_page:
+        popular_articles = Article.objects.filter(
+            moderation_status='approved'
+        ).order_by('-view_count', '-created_at')[:4]
+
+        if request.user.is_authenticated:
+            recommended_articles = Article.objects.filter(
+                moderation_status='approved'
+            ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
+
+        ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
+        ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
+
+    # Get categories for all pages
+    categories = get_category_dict()
+
+    # Define context outside the if condition so it's always available
     context = {
         'articles': articles,
-        'popular_articles': [],
-        'recommended_articles': [],
-        'ai_images': [],
-        'ai_videos': [],
+        'popular_articles': popular_articles,
+        'recommended_articles': recommended_articles,
+        'ai_images': ai_images,
+        'ai_videos': ai_videos,
         'categories': categories,
-        'is_main_page': False,
+        'is_main_page': is_main_page,
     }
 
     return render(request, 'articles/article_list.html', context)
 
 # 🔎 Article Detail + Comments
-def article_detail(request, pk):
+def article_detail(request, pk, slug):
     article = get_object_or_404(Article, pk=pk)
 
     # Increment view count
@@ -312,7 +393,7 @@ def article_detail(request, pk):
             comment.user = request.user
             comment.save()
             messages.success(request, "Your comment has been added!")
-            return redirect('article_detail', pk=article.pk)
+            return redirect('article_detail', pk=article.pk, slug=slugify(article.title))
     else:
         form = CommentForm()
 
@@ -397,14 +478,14 @@ def ai_video_gallery(request):
 
 # 📝 Edit Article
 @login_required
-def edit_article(request, pk):
+def edit_article(request, pk, slug):
     article = get_object_or_404(Article, pk=pk, user=request.user)
     if request.method == 'POST':
         form = ArticleForm(request.POST, request.FILES, instance=article)
         if form.is_valid():
             form.save()
             messages.success(request, '✅ Article updated successfully.')
-            return redirect('article_detail', pk=article.pk)
+            return redirect('article_detail', pk=article.pk, slug=slugify(article.title))
     else:
         form = ArticleForm(instance=article)
 
@@ -416,7 +497,7 @@ def edit_article(request, pk):
 
 # ❌ Delete Article
 @login_required
-def delete_article(request, pk):
+def delete_article(request, pk, slug):
     article = get_object_or_404(Article, pk=pk, user=request.user)
     if request.method == 'POST':
         article.delete()
@@ -504,15 +585,6 @@ def add_image_comment(request, pk):
             )
             messages.success(request, "Your comment has been added!")
     return redirect('ai_image_detail', pk=image.pk)
-
-def ai_image_detail(request, pk):
-    image = get_object_or_404(AIImage, pk=pk)
-    comments = image.comments.all()  # Get all comments
-    return render(request, 'articles/ai_image_detail.html', {
-        'image': image,
-        'comments': comments,
-        'categories': CATEGORIES
-    })
 
 @login_required
 def add_video_comment(request, pk):
