@@ -284,7 +284,7 @@ def article_list(request):
     ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
     # Get categories for the category filter
-    category_dict = get_category_dict()
+    categories = get_category_dict()
 
     context = {
         'articles': articles,
@@ -292,7 +292,7 @@ def article_list(request):
         'recommended_articles': recommended_articles,
         'ai_images': ai_images,
         'ai_videos': ai_videos,
-        'categories': category_dict,
+        'categories': categories,
         'is_main_page': is_main_page,
     }
 

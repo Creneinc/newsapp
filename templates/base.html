@@ -116,12 +116,12 @@
     <!-- ✅ Mobile Dropdown Menu -->
     <div id="mobile-menu"
      class="absolute top-0 left-0 right-0 z-40 bg-white shadow-md overflow-hidden max-h-0 opacity-0 pointer-events-none transition-all duration-300 ease-in-out md:hidden w-full px-6 py-2 space-y-2 rounded-b-lg">
-        <a href="{% url 'article_list' %}?show_all=true" class="block px-4 py-2 text-sm font-semibold rounded-md
-        {% if request.resolver_match.url_name == 'article_list' and request.GET.show_all == 'true' %}
-            bg-emerald-700 text-white
-        {% else %}
-            bg-gray-200 text-gray-800 hover:bg-gray-300
-        {% endif %}">All Articles</a>
+            <a href="{% url 'article_list' %}?show_all=true" class="block px-4 py-2 text-sm font-semibold rounded-md
+            {% if request.resolver_match.url_name == 'article_list' and request.GET.show_all == 'true' %}
+                bg-emerald-700 text-white
+            {% else %}
+                bg-gray-200 text-gray-800 hover:bg-gray-300
+            {% endif %}">All Articles</a>
 
         {% for key, value in categories.items %}
             <a href="{% url 'article_list' %}?category={{ key }}" class="block px-2 py-2 text-sm font-semibold rounded-md
