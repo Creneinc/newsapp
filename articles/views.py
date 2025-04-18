@@ -247,9 +247,11 @@ def get_trending_articles():
 def article_list(request):
     # Get query parameters
     category = request.GET.get('category')
+    show_all = request.GET.get('show_all')
+
 
     # Determine if this is the main page (no category filter)
-    is_main_page = category is None and (request.path == '/' or request.path == '/article_list/')
+    is_main_page = (category is None and request.path == '/') or show_all == 'true'
 
     # Your existing view code...
     articles = Article.objects.all().order_by('-created_at')

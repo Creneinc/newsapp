@@ -266,7 +266,7 @@
             <div class="mt-6">
                 <h4 class="font-medium text-gray-900">Filter by Category</h4>
                 <div class="mt-2 flex flex-wrap gap-2">
-                    <a href="{% url 'article_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded-full text-xs">All</a>
+                    <a href="{% url 'article_list' %}?show_all=true" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded-full text-xs">All</a>
                     {% for category_name, category_label in categories.items %}
                     <a href="{% url 'article_list' %}?category={{ category_name }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded-full text-xs">
                         {{ category_label }}
