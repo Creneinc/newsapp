@@ -293,7 +293,7 @@ def article_list(request):
         'ai_images': ai_images,
         'ai_videos': ai_videos,
         'categories': categories,
-        'is_main_page': is_main_page,
+        'is_main_page': True,
     }
 
     return render(request, 'articles/article_list.html', context)
