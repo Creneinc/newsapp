@@ -245,53 +245,37 @@ def get_trending_articles():
 
 
 def article_list(request):
-    # Get all articles with proper filtering
+    # Get query parameters
+    category = request.GET.get('category')
+
+    # Determine if this is the main page (no category filter)
+    is_main_page = category is None
+
+    # Your existing view code...
     articles = Article.objects.all().order_by('-created_at')
 
-    # Filter by category if requested
-    category = request.GET.get('category')
+    # Apply category filter if provided
     if category:
-        # Handle multiple categories separated by commas
         if ',' in category:
             categories = category.split(',')
             articles = articles.filter(category__in=categories)
         else:
             articles = articles.filter(category=category)
 
-    # Get manually selected trending articles first
-    trending_articles = Article.objects.filter(
-        is_trending=True,
+    # Get popular articles
+    popular_articles = Article.objects.filter(
         moderation_status='approved'
-    ).order_by('-created_at')
-
-    # If we don't have enough trending articles, supplement with popular ones
-    if trending_articles.count() < 4:
-        # Get popular articles based on view count
-        popular_articles = Article.objects.filter(
-            moderation_status='approved'
-        ).exclude(
-            id__in=[a.id for a in trending_articles]
-        ).order_by('-view_count', '-created_at')[:4-trending_articles.count()]
-
-        # Combine the two querysets
-        popular_articles = list(trending_articles) + list(popular_articles)
-    else:
-        popular_articles = trending_articles[:4]
+    ).order_by('-view_count', '-created_at')[:4]
 
     # Get recommended articles
     if request.user.is_authenticated:
-        # Add your recommendation logic here
         recommended_articles = Article.objects.filter(
             moderation_status='approved'
-        ).exclude(
-            id__in=[a.id for a in popular_articles]
-        ).order_by('-created_at')[:4]
+        ).exclude(id__in=[a.id for a in popular_articles]).order_by('-created_at')[:4]
     else:
         recommended_articles = []
 
-    # Get AI content from their respective models
-    from .models import AIImage, AIVideo  # Import the correct models
-
+    # Get AI content
     ai_images = AIImage.objects.all().order_by('-generated_at')[:1]
     ai_videos = AIVideo.objects.all().order_by('-generated_at')[:1]
 
@@ -302,6 +286,7 @@ def article_list(request):
         'ai_images': ai_images,
         'ai_videos': ai_videos,
         'categories': CATEGORIES,
+        'is_main_page': is_main_page,  # Add this flag
     }
 
     return render(request, 'articles/article_list.html', context)
