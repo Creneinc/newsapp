@@ -83,7 +83,7 @@
                     {% for image in ai_images|slice:":1" %}
                     <div class="p-3">
                         <!-- Make the image clickable -->
-                        <div class="cursor-pointer clickable-container" data-href="{% url 'ai_image_detail' image.pk %}">
+                        <div class="cursor-pointer clickable-container" data-href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
                             <img src="{{ image.image.url }}" class="w-full h-48 object-contain rounded-md bg-gray-100" alt="{{ image.title }}">
                             <h4 class="mt-2 text-md font-semibold text-gray-900 truncate">{{ image.title|default:"Untitled AI Image" }}</h4>
                             {% if image.prompt_used %}
