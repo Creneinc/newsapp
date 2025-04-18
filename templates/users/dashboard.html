@@ -125,7 +125,7 @@
                                         <p class="text-xs text-gray-500 mt-1">{{ image.generated_at|date:"M d, Y" }}</p>
                                     </div>
                                     <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
-                                        <a href="{% url 'delete_ai_image' image.pk image.title|slugify %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
+                                        <a href="{% url 'delete_ai_image' image.pk %}" class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition">Delete</a>
                                     </div>
                                 </div>
                             {% endfor %}
