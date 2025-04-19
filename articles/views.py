@@ -488,32 +488,28 @@ def ai_image_gallery(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Mark liked state from session
-    images_with_like = []
+    # Attach liked state directly to each image object
     for image in page_obj.object_list:
         liked_key = f"liked_ai_image_{image.pk}"
-        liked = request.session.get(liked_key, False)
-        images_with_like.append((image, liked))
+        image.liked = request.session.get(liked_key, False)
 
     return render(request, 'articles/ai_image_gallery.html', {
         'page_obj': page_obj,
-        'images_with_like': images_with_like,
+        'images': page_obj.object_list,
         'categories': CATEGORIES,
     })
 
 # 🎞 AI Video Gallery
 def ai_video_gallery(request):
     ai_videos = AIVideo.objects.select_related('user').order_by('-generated_at')
-    ai_videos = [video for video in ai_videos if video.pk]
 
-    videos_with_like = []
+    # Attach liked state directly to each video object
     for video in ai_videos:
         liked_key = f"liked_ai_video_{video.pk}"
-        liked = request.session.get(liked_key, False)
-        videos_with_like.append((video, liked))
+        video.liked = request.session.get(liked_key, False)
 
     return render(request, 'articles/ai_video_gallery.html', {
-        'videos_with_like': videos_with_like,
+        'videos': ai_videos,
         'categories': CATEGORIES,
     })
 
@@ -578,15 +574,15 @@ def ai_image_detail(request, pk, slug=None):
     image.view_count += 1
     image.save(update_fields=["view_count"])
 
-    comments = ImageComment.objects.filter(image=image).order_by('-created_at')
-
+    # Attach session-based liked flag to the image object
     liked_key = f"liked_ai_image_{image.pk}"
-    liked = request.session.get(liked_key, False)
+    image.liked = request.session.get(liked_key, False)
+
+    comments = ImageComment.objects.filter(image=image).order_by('-created_at')
 
     return render(request, 'articles/ai_image_detail.html', {
         'image': image,
         'comments': comments,
-        'liked': liked,
         'categories': CATEGORIES,
     })
 
@@ -597,13 +593,13 @@ def ai_video_detail(request, pk, slug=None):
 
     comments = video.comments.all()
 
+    # Attach liked status to the object directly
     liked_key = f"liked_ai_video_{video.pk}"
-    liked = request.session.get(liked_key, False)
+    video.liked = request.session.get(liked_key, False)
 
     return render(request, 'articles/ai_video_detail.html', {
         'video': video,
         'comments': comments,
-        'liked': liked,
         'categories': CATEGORIES,
     })
 

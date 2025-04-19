@@ -4,8 +4,8 @@
 
 <div class="max-w-7xl mx-auto px-6 pb-20">
   {% if images %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {% for image, liked in images_with_like %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for image in images %}
       <div class="relative">
         <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
           <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
@@ -30,7 +30,7 @@
               <div>👁️ {{ image.view_count }} views</div>
               <div class="flex items-center gap-1">
                 {% if user.is_authenticated %}
-                <button class="like-btn {% if liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
+                <button class="like-btn {% if image.liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
                         data-id="{{ image.pk }}"
                         data-type="ai-image"
                         data-url="{% url 'like_content' 'ai-image' image.pk %}">

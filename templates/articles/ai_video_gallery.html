@@ -4,22 +4,16 @@
 
 <div class="max-w-7xl mx-auto px-6 pb-20">
   {% if videos %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {% for video, liked in videos_with_like %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for video in videos %}
       <div class="relative">
         <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
-          {% if video.pk %}
           <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
-            <video class="w-full h-48 object-cover bg-gray-100" muted preload="metadata">
-              <source src="{{ video.video.url }}" type="video/mp4">
+            <video class="w-full h-48 object-cover bg-gray-100" preload="metadata" muted>
+              <source src="{{ video.video.url }}#t=0.5" type="video/mp4">
               Your browser does not support the video tag.
             </video>
           </a>
-          {% else %}
-          <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-            <span class="text-gray-500">Video unavailable</span>
-          </div>
-          {% endif %}
 
           <div class="p-4">
             <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ video.title }}</h2>
@@ -29,21 +23,17 @@
 
             <div class="flex justify-between items-center mt-2">
               <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
-              {% if video.user and video.user.username %}
               <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
                 By {{ video.user.username }}
               </a>
-              {% else %}
-              <span class="text-xs text-gray-500">By Anonymous</span>
-              {% endif %}
             </div>
 
             <!-- 👁️ View Count & ❤️ Like Count -->
             <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
               <div>👁️ {{ video.view_count }} views</div>
               <div class="flex items-center gap-1">
-                {% if user.is_authenticated and video.pk %}
-                <button class="like-btn {% if liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
+                {% if user.is_authenticated %}
+                <button class="like-btn {% if video.liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
                         data-id="{{ video.pk }}"
                         data-type="ai-video"
                         data-url="{% url 'like_content' 'ai-video' video.pk %}">

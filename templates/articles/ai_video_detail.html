@@ -42,11 +42,11 @@
     <div>👁️ {{ video.view_count }} views</div>
     <div class="flex items-center gap-1">
       {% if user.is_authenticated %}
-      <button class="like-btn {% if liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
+      <button class="like-btn {% if video.liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
               data-id="{{ video.pk }}"
               data-type="ai-video"
               data-url="{% url 'like_content' 'ai-video' video.pk %}">
-        ❤️
+              ❤️
       </button>
       <span id="like-count-ai-video-{{ video.pk }}">{{ video.likes }}</span>
       {% else %}
