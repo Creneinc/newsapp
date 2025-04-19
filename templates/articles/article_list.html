@@ -82,7 +82,7 @@
                 <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-1 shadow-md">
                     <div class="bg-white rounded-xl overflow-hidden">
                     {% for image in ai_images|slice:":1" %}
-                    <div class="p-4 group hover:shadow-lg transition-all duration-300">
+                    <div class="p-4 group hover:shadow-lg transition-all duration-300 cursor-pointer"  data-href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
                         <div class="cursor-pointer rounded-lg overflow-hidden transform group-hover:scale-[1.02] group-hover:-rotate-1 transition duration-300" data-href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
                         <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full h-48 object-contain bg-gray-100 rounded-md" />
                         </div>
@@ -133,7 +133,7 @@
             <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-1 shadow-md">
                 <div class="bg-white rounded-xl overflow-hidden">
                 {% for video in ai_videos|slice:":1" %}
-                <div class="p-4 group hover:shadow-lg transition-all duration-300">
+                <div class="p-4 group hover:shadow-lg transition-all duration-300 cursor-pointer" data-href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
                     <!-- Clickable video thumbnail with hover effects -->
                     <div class="cursor-pointer rounded-lg overflow-hidden transform group-hover:scale-[1.02] group-hover:rotate-[0.5deg] transition duration-300" data-href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
                     <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
