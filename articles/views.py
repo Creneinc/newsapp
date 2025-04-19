@@ -749,12 +749,18 @@ def ai_insights_page(request):
 @require_POST
 @login_required
 def fan_user(request, username):
+    print(f"DEBUG: fan_user called with username={username}")
+    print(f"DEBUG: Current user: {request.user.username}")
+
     target = get_object_or_404(User, username=username)
+    print(f"DEBUG: Target user found: {target.username}")
+
     if target != request.user:
         fan, created = Fan.objects.get_or_create(fan=request.user, creator=target)
-        print("✅ Fan created:", fan, "New:", created)
+        print(f"DEBUG: Fan created: {fan}, New: {created}")
     else:
-        print("⚠️ Tried to fan self:", target.username)
+        print(f"DEBUG: Tried to fan self: {target.username}")
+
     return redirect('public_profile', username=username)
 
 @require_POST
