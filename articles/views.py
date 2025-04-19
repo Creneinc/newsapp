@@ -753,24 +753,19 @@ def fan_user(request, username):
     if target != request.user:
         # Check if relationship already exists
         existing = Fan.objects.filter(fan=request.user, creator=target).exists()
-        print(f"DEBUG: Fan relationship already exists? {existing}")
 
-        if existing:
-            print("DEBUG: User is already a fan, no action needed")
-            # You could also send a message to the user here
-            messages.info(request, "You're already a fan of this user!")
-        else:
+        if not existing:
             # Only create the relationship if it doesn't exist
             fan = Fan.objects.create(fan=request.user, creator=target)
-            print(f"DEBUG: New fan relationship created with ID: {fan.id}")
             messages.success(request, f"You are now a fan of {username}!")
+        else:
+            messages.info(request, "You're already a fan of this user!")
     else:
-        print(f"DEBUG: User tried to fan themselves: {request.user.username}")
         messages.warning(request, "You cannot become a fan of yourself!")
 
-    # Add a timestamp to prevent caching
-    import time
-    return redirect(f"/user/{username}?t={int(time.time())}")
+    # Use Django's built-in reverse function for the redirect
+    from django.urls import reverse
+    return redirect(reverse('public_profile', kwargs={'username': username}))
 
 @require_POST
 @login_required
