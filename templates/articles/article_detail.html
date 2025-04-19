@@ -107,13 +107,7 @@
 
         const likeButtons = document.querySelectorAll(".like-btn");
 
-        if (likeButtons.length === 0) {
-          console.warn("⚠️ No like buttons found on the page.");
-        }
-
         likeButtons.forEach(button => {
-          console.log("Binding like button:", button);
-
           button.addEventListener("click", function () {
             console.log("❤️ Like button clicked");
 
@@ -122,8 +116,6 @@
             const contentType = this.dataset.type;
             const countElement = document.getElementById(`like-count-${contentType}-${id}`);
 
-            console.log("Sending POST to:", url);
-
             fetch(url, {
               method: 'POST',
               headers: {
@@ -131,12 +123,9 @@
                 'Content-Type': 'application/json'
               }
             })
-            .then(response => {
-              console.log("Response:", response);
-              return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-              console.log("Data:", data);
+              console.log("✅ Like response:", data);
               if (data.status === 'success') {
                 countElement.textContent = data.likes;
                 this.classList.add('liked');
@@ -146,8 +135,7 @@
               }
             })
             .catch(error => {
-              console.error("Like error:", error);
-              alert("Failed to like. Please try again.");
+              console.error("❌ Like failed:", error);
             });
           });
         });
