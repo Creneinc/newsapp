@@ -763,9 +763,10 @@ def unfan_user(request, username):
 def profile_view(request):
     user = request.user
     fan_count = Fan.objects.filter(creator=user).count()
-    is_following = False
+    fans = Fan.objects.filter(creator=user).select_related('fan__profile')[:30]  # limit to top 30
 
-    if request.user.is_authenticated and request.user != user:
+    is_following = False
+    if request.user != user:
         is_following = Fan.objects.filter(fan=request.user, creator=user).exists()
 
     articles = Article.objects.filter(user=user)
@@ -779,6 +780,7 @@ def profile_view(request):
         'images': images,
         'videos': videos,
         'fan_count': fan_count,
+        'fans': fans,
         'is_following': is_following,
         'following': following,
     })
