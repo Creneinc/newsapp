@@ -7,8 +7,9 @@
     <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full object-cover max-h-[500px]">
 
     <div class="p-6">
-      <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ image.title|default:"Untitled AI Image" }}</h1>
-
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">
+        {{ image.title|default:"Untitled AI Image" }}
+      </h1>
       <p class="text-sm text-gray-500 mb-4">
         Generated on {{ image.generated_at|date:"F j, Y" }} by
         <a href="{% url 'public_profile' image.user.username %}" class="text-emerald-600 hover:underline">
@@ -17,24 +18,20 @@
       </p>
 
       {% if image.prompt_used %}
-      <p class="text-md text-gray-700 whitespace-pre-line">
-        {{ image.prompt_used }}
-      </p>
+        <p class="text-md text-gray-700 whitespace-pre-line">
+          {{ image.prompt_used }}
+        </p>
       {% else %}
-      <p class="italic text-gray-400">No prompt provided.</p>
+        <p class="italic text-gray-400">No description provided.</p>
       {% endif %}
 
-      <!-- ❤️ Like + 👁️ View Count -->
-      <div class="flex items-center gap-6 mt-6 text-sm text-gray-600">
-        <div class="flex items-center gap-2">
-          👁️ <span>{{ image.view_count }} views</span>
-        </div>
-
+      <!-- ❤️ Like Button & 👁️ View Count -->
+      <div class="flex items-center space-x-4 mt-4">
         {% if user.is_authenticated %}
         <div class="flex items-center gap-2">
           <button class="like-btn"
                   data-id="{{ image.pk }}"
-                  data-url="{% url 'like_content' 'ai-image' image.pk %}"
+                  data-url="{% url 'like_content' 'ai-image' image.pk %}">
               ❤️
           </button>
           <span id="like-count-image-{{ image.pk }}">{{ image.likes }}</span>
@@ -42,9 +39,10 @@
         {% else %}
         <div class="text-sm text-gray-500">❤️ {{ image.likes }}</div>
         {% endif %}
+        <span class="text-gray-500 text-sm">👁️ {{ image.view_count }} views</span>
       </div>
 
-      <!-- 🗑 Delete Button -->
+      <!-- 🗑 Delete (Author Only) -->
       {% if image.user == user %}
       <div class="mt-6">
         <form action="{% url 'delete_ai_image' image.pk %}" method="post" onsubmit="return confirm('Are you sure you want to delete this image?');">
@@ -90,24 +88,24 @@
 
       <div class="space-y-4">
         {% for comment in comments %}
-        <div class="border-l-4 border-emerald-500 pl-4 py-2">
-          <div class="flex items-center mb-1">
-            <a href="{% url 'public_profile' comment.user.username %}" class="font-medium text-gray-800 hover:text-emerald-600">
-              {{ comment.user.username }}
-            </a>
-            <span class="text-xs text-gray-500 ml-2">{{ comment.created_at|date:"M d, Y" }}</span>
+          <div class="border-l-4 border-emerald-500 pl-4 py-2">
+            <div class="flex items-center mb-1">
+              <a href="{% url 'public_profile' comment.user.username %}" class="font-medium text-gray-800 hover:text-emerald-600">
+                {{ comment.user.username }}
+              </a>
+              <span class="text-xs text-gray-500 ml-2">{{ comment.created_at|date:"M d, Y" }}</span>
+            </div>
+            <p class="text-gray-700">{{ comment.content }}</p>
           </div>
-          <p class="text-gray-700">{{ comment.content }}</p>
-        </div>
         {% empty %}
-        <p class="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
+          <p class="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
         {% endfor %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- 💡 AJAX Like Script -->
+<!-- ⚡ Like Script -->
 {% if user.is_authenticated %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -115,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!likeBtn) return;
 
   likeBtn.addEventListener('click', function () {
-    const id = this.dataset.id;
+    const pk = this.dataset.id;
     const url = this.dataset.url;
 
     fetch(url, {
@@ -128,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(res => res.json())
     .then(data => {
       if (data.status === 'success') {
-        const countEl = document.getElementById(`like-count-image-${id}`);
+        const countEl = document.getElementById(`like-count-image-${pk}`);
         countEl.textContent = data.likes;
         likeBtn.disabled = true;
         likeBtn.textContent = '❤️ Liked';
@@ -136,7 +134,9 @@ document.addEventListener('DOMContentLoaded', function () {
         alert(data.message || 'Already liked or error occurred.');
       }
     })
-    .catch(() => alert('Failed to send like.'));
+    .catch(err => {
+      console.error('Like error:', err);
+    });
   });
 
   function getCookie(name) {
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const cookies = document.cookie.split(';');
       for (let cookie of cookies) {
         cookie = cookie.trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        if (cookie.startsWith(name + '=')) {
           cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
           break;
         }
