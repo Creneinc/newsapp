@@ -30,7 +30,7 @@
               <div>👁️ {{ image.view_count }} views</div>
               <div class="flex items-center gap-1">
                 {% if user.is_authenticated %}
-                <button class="like-btn text-red-500 hover:scale-110 transition {% if request.session.liked_ai-image_image.pk %}liked{% endif %}"
+                <button class="like-btn text-red-500 hover:scale-110 transition"
                         data-id="{{ image.pk }}"
                         data-type="ai-image"
                         data-url="{% url 'like_content' 'ai-image' image.pk %}">

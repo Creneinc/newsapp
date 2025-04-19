@@ -35,7 +35,7 @@
   <!-- ❤️ Like -->
   <div class="mt-4 flex items-center gap-2">
     {% if user.is_authenticated %}
-    <button class="like-btn text-red-500 hover:scale-110 transition {% if request.session.liked_ai-video_video.pk %}liked{% endif %}"
+    <button class="like-btn text-red-500 hover:scale-110 transition"
             data-id="{{ video.pk }}"
             data-type="ai-video"
             data-url="{% url 'like_content' 'ai-video' video.pk %}">
