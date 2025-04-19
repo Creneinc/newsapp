@@ -65,6 +65,7 @@ urlpatterns = [
     path('search/', search_results, name='search_results'),
 
     # Fans
+    path("profile/<str:username>/", views.public_profile_view, name="public_profile"),
     path('fan/<str:username>/', views.fan_user, name='fan'),
     path('unfan/<str:username>/', views.unfan_user, name='unfan'),
 ]
