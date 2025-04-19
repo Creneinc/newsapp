@@ -75,7 +75,7 @@
     <h3 class="text-2xl font-bold text-gray-900 mb-4">Leave a Comment</h3>
 
     {% if user.is_authenticated and video.pk %}
-    <form action="{% url 'add_video_comment' video.pk %}" method="POST" class="space-y-4">
+    <form action="{% url 'add_video_comment' video.pk video.title|slugify %}" method="POST" class="space-y-4">
       {% csrf_token %}
       <textarea name="content" rows="4" class="w-full p-4 border rounded-md text-gray-700 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Write your comment here..." required></textarea>
       <button type="submit" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition">
