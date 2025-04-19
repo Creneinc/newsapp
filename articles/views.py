@@ -794,6 +794,7 @@ def profile_view(request):
 def public_profile_view(request, username):
     profile_user = get_object_or_404(User, username=username)
     fan_count = Fan.objects.filter(creator=profile_user).count()
+    fans = Fan.objects.filter(creator=profile_user).select_related('fan__profile')[:30]
     is_following = False
     following = Fan.objects.filter(fan=profile_user).select_related('creator')
 
@@ -814,6 +815,7 @@ def public_profile_view(request, username):
         'fan_count': fan_count,
         'is_following': is_following,
         'following': following,
+        'fans': fans,
     })
 
 @login_required
