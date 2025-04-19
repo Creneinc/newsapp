@@ -751,14 +751,18 @@ def ai_insights_page(request):
 def fan_user(request, username):
     target = get_object_or_404(User, username=username)
     if target != request.user:
-        Fan.objects.get_or_create(fan=request.user, creator=target)
+        fan, created = Fan.objects.get_or_create(fan=request.user, creator=target)
+        print("✅ Fan created:", fan, "New:", created)
+    else:
+        print("⚠️ Tried to fan self:", target.username)
     return redirect('public_profile', username=username)
 
 @require_POST
 @login_required
 def unfan_user(request, username):
     target = get_object_or_404(User, username=username)
-    Fan.objects.filter(fan=request.user, creator=target).delete()
+    deleted, _ = Fan.objects.filter(fan=request.user, creator=target).delete()
+    print(f"🗑️ Unfan deleted: {deleted} record(s)")
     return redirect('public_profile', username=username)
 
 @login_required
@@ -794,7 +798,9 @@ def public_profile_view(request, username):
     following = Fan.objects.filter(fan=profile_user).select_related('creator')
 
     if request.user.is_authenticated and request.user != profile_user:
+        # ✅ Make sure request.user is loaded correctly
         is_following = Fan.objects.filter(fan=request.user, creator=profile_user).exists()
+        print("💡 Following status:", is_following)
 
     articles = Article.objects.filter(user=profile_user)
     images = AIImage.objects.filter(user=profile_user)
