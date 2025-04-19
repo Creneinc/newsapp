@@ -798,7 +798,7 @@ def public_profile_view(request, username):
     images = AIImage.objects.filter(user=profile_user)
     videos = AIVideo.objects.filter(user=profile_user)
 
-    return render(request, 'users/public_profile.html', {
+    return render(request, 'public_profile.html', {
         'profile_user': profile_user,
         'articles': articles,
         'images': images,
