@@ -1,36 +1,73 @@
 {% extends 'base.html' %}
+{% block title %}Search Results – Crene{% endblock %}
 {% block content %}
 
-<div class="max-w-7xl mx-auto px-6 py-10 space-y-8">
+<div class="max-w-7xl mx-auto px-6 py-10 space-y-10">
   <h1 class="text-2xl font-bold text-gray-800">Search Results for “{{ query }}”</h1>
 
   {% if articles %}
     <div>
-      <h2 class="text-xl font-semibold mb-2">📰 Articles</h2>
-      <ul class="space-y-2">
+      <h2 class="text-xl font-semibold mb-4">📰 Articles</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {% for article in articles %}
-          <li>
-            <a href="{% url 'article_detail' article.pk %}" class="text-emerald-600 hover:underline">
-              {{ article.title }}
-            </a>
-          </li>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
+          <a href="{% url 'article_detail' article.pk article.title|slugify %}" class="block">
+            {% if article.image %}
+            <img src="{{ article.image.url }}" alt="{{ article.title }}" class="w-full h-40 object-cover">
+            {% endif %}
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-gray-900 truncate">{{ article.title }}</h3>
+              <p class="text-sm text-gray-600 mt-2 line-clamp-2">{{ article.summary|default:article.body|truncatewords:30 }}</p>
+              <div class="mt-3 flex justify-between text-xs text-gray-500">
+                <span>👁️ {{ article.view_count }} views</span>
+                {% if user.is_authenticated %}
+                <span class="flex items-center gap-1">
+                  <button class="like-btn text-red-500 hover:scale-110 transition"
+                          data-id="{{ article.pk }}"
+                          data-type="article"
+                          data-url="{% url 'like_article' article.pk %}">❤️</button>
+                  <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
+                </span>
+                {% else %}
+                <span class="text-xs text-gray-400">❤️ {{ article.likes }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        </div>
         {% endfor %}
-      </ul>
+      </div>
     </div>
   {% endif %}
 
   {% if images %}
     <div>
-      <h2 class="text-xl font-semibold mb-2">🖼 AI Images</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <h2 class="text-xl font-semibold mb-4">🖼 AI Images</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {% for image in images %}
-          <div class="bg-white shadow rounded overflow-hidden">
-            <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full h-48 object-cover">
-            <div class="p-3">
-              <p class="font-medium text-gray-800 truncate">{{ image.title }}</p>
-              <p class="text-sm text-gray-500 line-clamp-2">{{ image.prompt_used }}</p>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+          <a href="{% url 'ai_image_detail' image.pk image.title|slugify %}">
+            <img src="{{ image.image.url }}" alt="{{ image.title }}" class="w-full h-48 object-cover bg-gray-100">
+          </a>
+          <div class="p-4">
+            <h4 class="text-md font-semibold text-gray-900 truncate">{{ image.title }}</h4>
+            <p class="text-sm text-gray-500 mt-1 line-clamp-2 italic">{{ image.prompt_used }}</p>
+            <div class="mt-2 flex justify-between text-xs text-gray-500">
+              <span>👁️ {{ image.view_count }}</span>
+              {% if user.is_authenticated %}
+              <span class="flex items-center gap-1">
+                <button class="like-btn text-red-500 hover:scale-110 transition"
+                        data-id="{{ image.pk }}"
+                        data-type="ai-image"
+                        data-url="{% url 'like_content' 'ai-image' image.pk %}">❤️</button>
+                <span id="like-count-ai-image-{{ image.pk }}">{{ image.likes }}</span>
+              </span>
+              {% else %}
+              <span class="text-xs text-gray-400">❤️ {{ image.likes }}</span>
+              {% endif %}
             </div>
           </div>
+        </div>
         {% endfor %}
       </div>
     </div>
@@ -38,26 +75,96 @@
 
   {% if videos %}
     <div>
-      <h2 class="text-xl font-semibold mb-2">🎞 AI Videos</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <h2 class="text-xl font-semibold mb-4">🎞 AI Videos</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {% for video in videos %}
-          <div class="bg-white shadow rounded overflow-hidden">
-            <video controls class="w-full h-48 object-cover">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+          <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
+            <video class="w-full h-48 object-cover bg-black" controls muted>
               <source src="{{ video.video.url }}" type="video/mp4" />
             </video>
-            <div class="p-3">
-              <p class="font-medium text-gray-800 truncate">{{ video.title }}</p>
-              <p class="text-sm text-gray-500 line-clamp-2">{{ video.prompt_used }}</p>
+          </a>
+          <div class="p-4">
+            <h4 class="text-md font-semibold text-gray-900 truncate">{{ video.title }}</h4>
+            <p class="text-sm text-gray-500 mt-1 line-clamp-2 italic">{{ video.prompt_used }}</p>
+            <div class="mt-2 flex justify-between text-xs text-gray-500">
+              <span>👁️ {{ video.view_count }}</span>
+              {% if user.is_authenticated %}
+              <span class="flex items-center gap-1">
+                <button class="like-btn text-red-500 hover:scale-110 transition"
+                        data-id="{{ video.pk }}"
+                        data-type="ai-video"
+                        data-url="{% url 'like_content' 'ai-video' video.pk %}">❤️</button>
+                <span id="like-count-ai-video-{{ video.pk }}">{{ video.likes }}</span>
+              </span>
+              {% else %}
+              <span class="text-xs text-gray-400">❤️ {{ video.likes }}</span>
+              {% endif %}
             </div>
           </div>
+        </div>
         {% endfor %}
       </div>
     </div>
   {% endif %}
 
   {% if not articles and not images and not videos %}
-    <p class="text-gray-500 text-lg">No results found. Try a different keyword!</p>
+    <div class="text-gray-500 text-lg mt-8 text-center">
+      <p>No results found. Try a different keyword!</p>
+    </div>
   {% endif %}
 </div>
+
+{% if user.is_authenticated %}
+<!-- ✅ AJAX Like Script -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const buttons = document.querySelectorAll(".like-btn");
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const id = button.dataset.id;
+        const url = button.dataset.url;
+        const type = button.dataset.type;
+
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            const countEl = document.getElementById(`like-count-${type}-${id}`);
+            if (countEl) countEl.textContent = data.likes;
+            button.disabled = true;
+            button.textContent = "❤️ Liked";
+          } else {
+            alert(data.message || "Something went wrong.");
+          }
+        })
+        .catch(() => alert("Failed to like."));
+      });
+    });
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  });
+</script>
+{% endif %}
 
 {% endblock %}

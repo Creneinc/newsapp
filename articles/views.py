@@ -7,17 +7,18 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse, StreamingHttpResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.timezone import now
 from django.views.decorators.http import require_POST
+from django.apps import apps
 from articles.models import get_category_dict
 from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, SiteSettings
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
-from django.template.loader import render_to_string
 from celery.result import AsyncResult
 from uuid import uuid4
-from django.utils.timezone import now
 from datetime import timedelta
 import requests
 import logging
@@ -653,86 +654,37 @@ def reject_article(request, pk):
     return redirect('article_detail', pk=pk)
 
 @login_required
-def like_article(request, pk):
-    article_key = f"liked_article_{pk}"
-    last_like_key = f"last_like_time_article_{pk}"
+def like_content(request, content_type, pk):
+    model_map = {
+        'article': 'Article',
+        'ai-image': 'AIImage',
+        'ai-video': 'AIVideo'
+    }
 
-    # Check if the user has liked the article within the last 10 seconds
+    if content_type not in model_map:
+        return JsonResponse({'status': 'error', 'message': 'Invalid content type'}, status=400)
+
+    model = apps.get_model('articles', model_map[content_type])
+    session_key = f"liked_{content_type}_{pk}"
+    last_like_key = f"last_like_time_{content_type}_{pk}"
+
+    # Prevent rapid re-likes
     last_like = request.session.get(last_like_key)
     if last_like:
-        last_time = now() - timedelta(seconds=10)
-        if last_like > str(last_time):
+        if last_like > str(now() - timedelta(seconds=10)):
             return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
 
-    # If the user has already liked this article, prevent them from liking again
-    if request.session.get(article_key):
+    if request.session.get(session_key):
         return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
 
     try:
-        article = Article.objects.get(pk=pk)
-        article.likes += 1
-        article.save()
+        obj = model.objects.get(pk=pk)
+        obj.likes += 1
+        obj.save(update_fields=["likes"])
 
-        # Mark the article as liked in the session
-        request.session[article_key] = True
-        request.session[last_like_key] = str(now())  # Update the last like time
-
-        return JsonResponse({'status': 'success', 'likes': article.likes})
-    except Article.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Article not found'}, status=404)
-
-@login_required
-def like_ai_image(request, pk):
-    image_key = f"liked_image_{pk}"
-    last_like_key = f"last_like_time_{pk}"
-
-    # Check if the user is trying to like again within the timeout period
-    last_like = request.session.get(last_like_key)
-    if last_like:
-        last_time = now() - timedelta(seconds=10)
-        if last_like > str(last_time):
-            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
-
-    if request.session.get(image_key):
-        return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
-
-    try:
-        image = get_object_or_404(AIImage, pk=pk)
-        image.likes += 1
-        image.save()
-
-        # Save the like session to prevent double liking
-        request.session[image_key] = True
+        request.session[session_key] = True
         request.session[last_like_key] = str(now())
 
-        return JsonResponse({'status': 'success', 'likes': image.likes})
-    except AIImage.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Image not found'}, status=404)
-
-@login_required
-def like_ai_video(request, pk):
-    video_key = f"liked_video_{pk}"
-    last_like_key = f"last_like_time_video_{pk}"
-
-    # Check if the user is trying to like again within the timeout period
-    last_like = request.session.get(last_like_key)
-    if last_like:
-        last_time = now() - timedelta(seconds=10)
-        if last_like > str(last_time):
-            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
-
-    if request.session.get(video_key):
-        return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
-
-    try:
-        video = get_object_or_404(AIVideo, pk=pk)
-        video.likes += 1
-        video.save()
-
-        # Save the like session to prevent double liking
-        request.session[video_key] = True
-        request.session[last_like_key] = str(now())
-
-        return JsonResponse({'status': 'success', 'likes': video.likes})
-    except AIVideo.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Video not found'}, status=404)
+        return JsonResponse({'status': 'success', 'likes': obj.likes})
+    except model.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Content not found'}, status=404)

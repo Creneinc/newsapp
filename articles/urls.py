@@ -10,7 +10,7 @@ from .views import (
     ai_image_gallery, ai_video_gallery,
     ai_image_detail, ai_video_detail,
     delete_ai_image, delete_ai_video,
-    like_article, like_ai_image, like_ai_video,
+    like_content,
     check_article_status,
     approve_article, reject_article,
     add_image_comment, add_video_comment,
@@ -31,12 +31,14 @@ urlpatterns = [
     path('articles/<int:pk>-<slug:slug>/delete/', delete_article, name='delete_article'),
     path('article/<int:pk>-<slug:slug>/approve/', approve_article, name='approve_article'),
     path('article/<int:pk>-<slug:slug>/reject/', reject_article, name='reject_article'),
-    path('article/<int:pk>/like/', like_article, name='like_article'),
+
+    # Like content functionality
+    path('<str:content_type>/<int:pk>/like/', like_content, name='like_content'),
 
     # AI Article Creation
     path('create/article/', new_article, name='new_article'),
     path('create/article/ajax/', create_article, name='create_article'),
-    path('create/article/stream/', stream_article_generation, name='stream_article'),
+    path('create/article/stream/', views.stream_article_generation, name='stream_article_generation'),
     path('stream-groq/', stream_article_generation, name='stream_article_generation'),  # Consider removing if redundant
     path('check-article-status/', check_article_status, name='check_article_status'),
 
@@ -44,14 +46,12 @@ urlpatterns = [
     path('ai-images/', ai_image_gallery, name='ai_image_gallery'),
     path('ai-images/<int:pk>-<slug:slug>/', ai_image_detail, name='ai_image_detail'),
     path('ai-images/delete/<int:pk>/', delete_ai_image, name='delete_ai_image'),
-    path('ai-images/<int:pk>/like/', like_ai_image, name='like_ai_image'),
     path('ai-images/<int:pk>-<slug:slug>/comment/', add_image_comment, name='add_image_comment'),
 
     # AI Videos
     path('ai-videos/', ai_video_gallery, name='ai_video_gallery'),
     path('ai-videos/<int:pk>-<slug:slug>/', ai_video_detail, name='ai_video_detail'),
     path('ai-videos/delete/<int:pk>/', delete_ai_video, name='delete_ai_video'),
-    path('ai-videos/<int:pk>/like/', like_ai_video, name='like_ai_video'),
     path('ai-videos/<int:pk>-<slug:slug>/comment/', add_video_comment, name='add_video_comment'),
 
     # Uploads

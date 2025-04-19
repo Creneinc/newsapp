@@ -30,8 +30,13 @@
             <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
               <span>👁️ {{ video.view_count }} views</span>
               <span class="flex items-center gap-1">
-                <button class="like-btn text-red-500 hover:scale-110 transition" data-id="{{ video.pk }}">❤️</button>
-                <span id="like-count-{{ video.pk }}">{{ video.likes }}</span>
+                <button class="like-btn text-red-500 hover:scale-110 transition"
+                        data-url="{% url 'like_ai_video' video.pk %}"
+                        data-id="{{ video.pk }}"
+                        data-type="video">
+                  ❤️
+                </button>
+                <span id="like-count-video-{{ video.pk }}">{{ video.likes }}</span>
               </span>
             </div>
 
@@ -74,52 +79,79 @@
   {% endif %}
 </div>
 
-<!-- 🔧 Script: Video thumbnails & Like functionality -->
+<!-- 🔧 Script: Thumbnails & Likes -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const containers = document.querySelectorAll('.video-thumbnail-container');
-  containers.forEach(container => {
+  // 🖼️ Generate thumbnail from video
+  document.querySelectorAll('.video-thumbnail-container').forEach(container => {
     const videoUrl = container.dataset.videoUrl;
     const canvas = container.querySelector('canvas');
     const context = canvas.getContext('2d');
     const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.src = videoUrl + '#t=1.0';
     canvas.width = 320;
     canvas.height = 180;
 
+    video.src = videoUrl + '#t=1.0';
+    video.crossOrigin = 'anonymous';
     video.addEventListener('loadeddata', () => video.currentTime = 1);
     video.addEventListener('seeked', () => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       video.pause(); video.removeAttribute('src'); video.load();
     });
     video.addEventListener('error', () => {
-      const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#10b981'); gradient.addColorStop(1, '#047857');
-      context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height);
-      context.font = '24px Arial'; context.fillStyle = 'white'; context.textAlign = 'center';
+      const grad = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, '#10b981');
+      grad.addColorStop(1, '#047857');
+      context.fillStyle = grad;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = 'white';
+      context.textAlign = 'center';
+      context.font = '24px Arial';
       context.fillText('AI Video', canvas.width / 2, canvas.height / 2);
     });
   });
 
-  // ❤️ AJAX Like Handling
-  const likeButtons = document.querySelectorAll('.like-btn');
-  likeButtons.forEach(button => {
-    button.addEventListener('click', e => {
-      const pk = button.dataset.id;
-      fetch(`/ai-videos/${pk}/like/`, {
+  // ❤️ Like functionality
+  document.querySelectorAll('.like-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.id;
+      const url = button.dataset.url;
+
+      fetch(url, {
         method: 'POST',
         headers: {
-          'X-CSRFToken': '{{ csrf_token }}',
+          'X-CSRFToken': getCookie('csrftoken'),
           'Content-Type': 'application/json'
         }
       })
       .then(res => res.json())
       .then(data => {
-        document.getElementById(`like-count-${pk}`).textContent = data.likes;
-      });
+        if (data.status === 'success') {
+          document.getElementById(`like-count-video-${id}`).textContent = data.likes;
+          button.disabled = true;
+          button.textContent = '❤️ Liked';
+        } else {
+          alert(data.message || 'Already liked or error occurred.');
+        }
+      })
+      .catch(err => console.error('Like error:', err));
     });
   });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 });
 </script>
 

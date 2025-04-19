@@ -30,10 +30,12 @@
               <div>👁️ {{ image.view_count }} views</div>
               <div class="flex items-center gap-1">
                 <button class="like-btn text-red-500 hover:scale-110 transition"
-                        data-id="{{ image.pk }}">
+                        data-id="{{ image.pk }}"
+                        data-type="ai-image"
+                        data-url="{% url 'like_ai_image' image.pk %}">
                   ❤️
                 </button>
-                <span id="like-count-{{ image.pk }}">{{ image.likes }}</span>
+                <span id="like-count-ai-image-{{ image.pk }}">{{ image.likes }}</span>
               </div>
             </div>
           </div>
@@ -69,52 +71,50 @@
   {% endif %}
 </div>
 
-<!-- ❤️ Like Button AJAX Handler -->
+<!-- ❤️ Like AJAX Script -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const likeButtons = document.querySelectorAll('.like-btn');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.like-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const id = button.dataset.id;
+        const url = button.dataset.url;
 
-  likeButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const imageId = button.dataset.id;
-
-      fetch(`/ai-images/${imageId}/like/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken'),
-          'Content-Type': 'application/json',
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          const countEl = document.getElementById(`like-count-${imageId}`);
-          countEl.textContent = data.likes;
-          button.disabled = true;
-          button.textContent = '❤️ Liked';
-        } else {
-          alert(data.message || 'Something went wrong.');
-        }
-      })
-      .catch(() => alert('Failed to send like.'));
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            document.getElementById(`like-count-ai-image-${id}`).textContent = data.likes;
+            button.disabled = true;
+            button.textContent = '❤️ Liked';
+          } else {
+            alert(data.message || 'Already liked or error occurred.');
+          }
+        })
+        .catch(() => alert('Failed to send like.'));
+      });
     });
-  });
 
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
         }
       }
+      return cookieValue;
     }
-    return cookieValue;
-  }
-});
+  });
 </script>
 
 {% endblock %}

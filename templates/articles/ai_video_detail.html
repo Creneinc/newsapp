@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
-{% block content %}
 
+{% block content %}
 <div class="max-w-4xl mx-auto px-6 py-12">
   <div class="bg-white shadow-lg rounded-xl overflow-hidden">
 
@@ -34,12 +34,14 @@
       <!-- ❤️ Like Button & 👁️ View Count -->
       <div class="flex items-center space-x-4 mt-4">
         {% if user.is_authenticated %}
-        <form id="like-form" method="POST" action="{% url 'like_ai_video' video.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="flex items-center space-x-1 text-red-600 hover:text-red-700">
-            ❤️ <span id="like-count">{{ video.likes }}</span>
+        <div class="flex items-center gap-2">
+          <button class="like-btn"
+                  data-id="{{ video.pk }}"
+                  data-url="{% url 'like_ai_video' video.pk %}">
+              ❤️
           </button>
-        </form>
+          <span id="like-count-video-{{ video.pk }}">{{ video.likes }}</span>
+        </div>
         {% else %}
         <div class="text-sm text-gray-500">❤️ {{ video.likes }}</div>
         {% endif %}
@@ -112,20 +114,52 @@
 <!-- ⚡ Like Script -->
 {% if user.is_authenticated %}
 <script>
-document.getElementById('like-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  fetch(this.action, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value
-    }
-  })
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('like-count').textContent = data.likes;
+document.addEventListener('DOMContentLoaded', function () {
+  const likeBtn = document.querySelector('.like-btn');
+  if (!likeBtn) return;
+
+  likeBtn.addEventListener('click', function () {
+    const pk = this.dataset.id;
+    const url = this.dataset.url;
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        const countEl = document.getElementById(`like-count-video-${pk}`);
+        countEl.textContent = data.likes;
+        likeBtn.disabled = true;
+        likeBtn.textContent = '❤️ Liked';
+      } else {
+        alert(data.message || 'Already liked or error occurred.');
+      }
+    })
+    .catch(err => {
+      console.error('Like error:', err);
+    });
   });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 });
 </script>
 {% endif %}
-
 {% endblock %}
