@@ -66,8 +66,8 @@ urlpatterns = [
 
     # Fans
     path("profile/<str:username>/", views.public_profile_view, name="public_profile"),
-    path('fan/<str:username>/', views.fan_user, name='fan'),
-    path('unfan/<str:username>/', views.unfan_user, name='unfan'),
+    path("fan/<str:username>/", views.fan_user, name="fan_user"),
+    path("unfan/<str:username>/", views.unfan_user, name="unfan_user"),
 ]
 
 if settings.DEBUG:
