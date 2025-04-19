@@ -5,7 +5,7 @@
 <div class="max-w-7xl mx-auto px-6 pb-20">
   {% if videos %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {% for video in videos %}
+      {% for video, liked in videos_with_like %}
       <div class="relative">
         <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
           {% if video.pk %}
@@ -43,7 +43,7 @@
               <div>👁️ {{ video.view_count }} views</div>
               <div class="flex items-center gap-1">
                 {% if user.is_authenticated and video.pk %}
-                <button class="like-btn text-red-500 hover:scale-110 transition"
+                <button class="like-btn {% if liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
                         data-id="{{ video.pk }}"
                         data-type="ai-video"
                         data-url="{% url 'like_content' 'ai-video' video.pk %}">

@@ -32,20 +32,20 @@
     {% endif %}
   </div>
 
-  <!-- ❤️ Like -->
-  <div class="mt-4 flex items-center gap-2">
-    {% if user.is_authenticated %}
-    <button class="like-btn text-red-500 hover:scale-110 transition {% if request.session.liked_article_article.pk %}liked{% endif %}"
-            data-id="{{ article.pk }}"
-            data-type="article"
-            data-url="{% url 'like_content' 'article' article.pk %}">
-      ❤️
-    </button>
-    <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
-    {% else %}
-    <div class="text-sm text-gray-500">❤️ {{ article.likes }}</div>
-    {% endif %}
-  </div>
+        <!-- ❤️ Like -->
+        <div class="mt-4 flex items-center gap-2">
+        {% if user.is_authenticated %}
+        <button class="like-btn text-red-500 hover:scale-110 transition {% if liked %}liked{% endif %}"
+                data-id="{{ article.pk }}"
+                data-type="article"
+                data-url="{% url 'like_content' 'article' article.pk %}">
+        ❤️
+        </button>
+        <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
+        {% else %}
+        <div class="text-sm text-gray-500">❤️ {{ article.likes }}</div>
+        {% endif %}
+        </div>
 
   <!-- ✏️ Edit/Delete -->
   {% if user == article.user %}

@@ -29,19 +29,22 @@
   </div>
   {% endif %}
 
-  <!-- ❤️ Like -->
-  <div class="mt-4 flex items-center gap-2">
-    {% if user.is_authenticated %}
-    <button class="like-btn text-red-500 hover:scale-110 transition"
-            data-id="{{ image.pk }}"
-            data-type="ai-image"
-            data-url="{% url 'like_content' 'ai-image' image.pk %}">
-      ❤️
-    </button>
-    <span id="like-count-ai-image-{{ image.pk }}">{{ image.likes }}</span>
-    {% else %}
-    <div class="text-sm text-gray-500">❤️ {{ image.likes }}</div>
-    {% endif %}
+  <!-- 👁️ View Count & ❤️ Like Count -->
+  <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+    <div>👁️ {{ image.view_count }} views</div>
+    <div class="flex items-center gap-1">
+      {% if user.is_authenticated %}
+      <button class="like-btn {% if liked %}liked{% endif %} text-red-500 hover:scale-110 transition"
+              data-id="{{ image.pk }}"
+              data-type="ai-image"
+              data-url="{% url 'like_content' 'ai-image' image.pk %}">
+        ❤️
+      </button>
+      <span id="like-count-ai-image-{{ image.pk }}">{{ image.likes }}</span>
+      {% else %}
+      <span>❤️ {{ image.likes }}</span>
+      {% endif %}
+    </div>
   </div>
 
   <!-- 🗑 Delete Option (for owner) -->

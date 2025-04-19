@@ -406,6 +406,10 @@ def article_detail(request, pk, slug):
 
     comments = article.comments.all()
 
+    # Check if the current user has liked this article
+    liked_key = f"liked_article_{article.pk}"
+    liked = request.session.get(liked_key, False)
+
     if request.method == 'POST' and request.user.is_authenticated:
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -422,6 +426,7 @@ def article_detail(request, pk, slug):
         'article': article,
         'comments': comments,
         'form': form,
+        'liked': liked,
         'categories': CATEGORIES,
     })
 
@@ -483,21 +488,32 @@ def ai_image_gallery(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Mark liked state from session
+    images_with_like = []
+    for image in page_obj.object_list:
+        liked_key = f"liked_ai_image_{image.pk}"
+        liked = request.session.get(liked_key, False)
+        images_with_like.append((image, liked))
+
     return render(request, 'articles/ai_image_gallery.html', {
         'page_obj': page_obj,
-        'images': page_obj.object_list,
+        'images_with_like': images_with_like,
         'categories': CATEGORIES,
     })
 
 # 🎞 AI Video Gallery
 def ai_video_gallery(request):
     ai_videos = AIVideo.objects.select_related('user').order_by('-generated_at')
-
-    # Filter out videos with no pk
     ai_videos = [video for video in ai_videos if video.pk]
 
+    videos_with_like = []
+    for video in ai_videos:
+        liked_key = f"liked_ai_video_{video.pk}"
+        liked = request.session.get(liked_key, False)
+        videos_with_like.append((video, liked))
+
     return render(request, 'articles/ai_video_gallery.html', {
-        'videos': ai_videos,
+        'videos_with_like': videos_with_like,
         'categories': CATEGORIES,
     })
 
@@ -561,12 +577,16 @@ def ai_image_detail(request, pk, slug=None):
     image = get_object_or_404(AIImage, pk=pk)
     image.view_count += 1
     image.save(update_fields=["view_count"])
-    # Make sure to query the comments
+
     comments = ImageComment.objects.filter(image=image).order_by('-created_at')
+
+    liked_key = f"liked_ai_image_{image.pk}"
+    liked = request.session.get(liked_key, False)
 
     return render(request, 'articles/ai_image_detail.html', {
         'image': image,
-        'comments': comments,  # Pass comments to the template
+        'comments': comments,
+        'liked': liked,
         'categories': CATEGORIES,
     })
 
@@ -574,11 +594,17 @@ def ai_video_detail(request, pk, slug=None):
     video = get_object_or_404(AIVideo, pk=pk)
     video.view_count += 1
     video.save(update_fields=["view_count"])
-    comments = video.comments.all()  # Get all comments
+
+    comments = video.comments.all()
+
+    liked_key = f"liked_ai_video_{video.pk}"
+    liked = request.session.get(liked_key, False)
+
     return render(request, 'articles/ai_video_detail.html', {
         'video': video,
         'comments': comments,
-        'categories': CATEGORIES
+        'liked': liked,
+        'categories': CATEGORIES,
     })
 
 @login_required
@@ -659,7 +685,6 @@ def reject_article(request, pk):
 
 @login_required
 @require_POST
-@csrf_exempt
 def like_content(request, content_type, pk):
     model_map = {
         'article': 'Article',
@@ -672,12 +697,10 @@ def like_content(request, content_type, pk):
 
     model = apps.get_model('articles', model_map[content_type])
 
-    # Replace hyphens with underscores for session keys
     safe_content_type = content_type.replace('-', '_')
     session_key = f"liked_{safe_content_type}_{pk}"
     last_like_key = f"last_like_time_{safe_content_type}_{pk}"
 
-    # Prevent rapid re-likes
     last_like = request.session.get(last_like_key)
     if last_like:
         try:
@@ -685,9 +708,8 @@ def like_content(request, content_type, pk):
             last_like_time = timezone.datetime.fromisoformat(last_like)
             if current_time - last_like_time < timedelta(seconds=10):
                 return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
-        except (ValueError, TypeError) as e:
-            # Handle potential formatting issues with the stored datetime
-            pass  # Continue as if no previous like time was stored
+        except (ValueError, TypeError):
+            pass  # Treat as no prior like
 
     if request.session.get(session_key):
         return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
@@ -699,7 +721,6 @@ def like_content(request, content_type, pk):
 
         request.session[session_key] = True
         request.session[last_like_key] = now().isoformat()
-        # Ensure session is saved
         request.session.modified = True
 
         return JsonResponse({'status': 'success', 'likes': obj.likes})
