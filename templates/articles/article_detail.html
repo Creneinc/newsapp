@@ -102,82 +102,70 @@
 
 {% block scripts %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const likeButtons = document.querySelectorAll(".like-btn");
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("Page JS loaded ✅");
 
-    if (likeButtons.length > 0) {
-      likeButtons.forEach(button => {
-        button.addEventListener("click", function () {
-          const id = this.dataset.id;
-          const url = this.dataset.url;
-          const contentType = this.dataset.type || 'article';
-          const countElement = document.getElementById(`like-count-${contentType}-${id}`);
+        const likeButtons = document.querySelectorAll(".like-btn");
 
-          fetch(url, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': getCookie('csrftoken'),
-              'Content-Type': 'application/json'
-            }
-          })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (data.status === 'success') {
-              if (countElement) {
-                countElement.textContent = data.likes;
+        if (likeButtons.length === 0) {
+          console.warn("⚠️ No like buttons found on the page.");
+        }
+
+        likeButtons.forEach(button => {
+          console.log("Binding like button:", button);
+
+          button.addEventListener("click", function () {
+            console.log("❤️ Like button clicked");
+
+            const id = this.dataset.id;
+            const url = this.dataset.url;
+            const contentType = this.dataset.type;
+            const countElement = document.getElementById(`like-count-${contentType}-${id}`);
+
+            console.log("Sending POST to:", url);
+
+            fetch(url, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
               }
-              this.classList.add('liked');
-              this.disabled = true;
-            } else {
-              console.error('Like error:', data.message);
-              alert(data.message || 'Error liking content');
-            }
-          })
-          .catch(error => {
-            console.error('Fetch error:', error);
-            alert('Failed to like. Please try again later.');
+            })
+            .then(response => {
+              console.log("Response:", response);
+              return response.json();
+            })
+            .then(data => {
+              console.log("Data:", data);
+              if (data.status === 'success') {
+                countElement.textContent = data.likes;
+                this.classList.add('liked');
+                this.disabled = true;
+              } else {
+                alert(data.message || 'Error liking content');
+              }
+            })
+            .catch(error => {
+              console.error("Like error:", error);
+              alert("Failed to like. Please try again.");
+            });
           });
         });
-      });
-    }
 
-    function getCookie(name) {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-          cookie = cookie.trim();
-          if (cookie.startsWith(name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+              cookie = cookie.trim();
+              if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
           }
+          return cookieValue;
         }
-      }
-      return cookieValue;
-    }
-
-    {% if article.body == "⏳ Generating article..." %}
-    async function checkArticleStatus() {
-      try {
-        const res = await fetch("/check-article-status/");
-        const data = await res.json();
-        if (data.status === "done") {
-          window.location.reload();
-        } else {
-          setTimeout(checkArticleStatus, 3000);
-        }
-      } catch (error) {
-        console.error("Error checking article status:", error);
-        setTimeout(checkArticleStatus, 5000); // Retry with longer delay on error
-      }
-    }
-    checkArticleStatus();
-    {% endif %}
-  });
-</script>
+      });
+    </script>
 {% endblock %}
