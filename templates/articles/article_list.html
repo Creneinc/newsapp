@@ -583,4 +583,27 @@
         });
         </script>
 
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+              document.querySelectorAll("[data-href]").forEach(el => {
+                el.addEventListener("click", function (e) {
+                  // Prevent redirect if a button or link inside was clicked
+                  if (
+                    e.target.closest("button") ||
+                    e.target.closest("a") ||
+                    e.target.tagName === "BUTTON" ||
+                    e.target.tagName === "A"
+                  ) {
+                    return;
+                  }
+
+                  const href = this.getAttribute("data-href");
+                  if (href) {
+                    window.location.href = href;
+                  }
+                });
+              });
+            });
+          </script>
+
 {% endblock %}
