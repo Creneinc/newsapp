@@ -32,7 +32,7 @@
                 <button class="like-btn text-red-500 hover:scale-110 transition"
                         data-id="{{ image.pk }}"
                         data-type="ai-image"
-                        data-url="{% url 'like_ai_image' image.pk %}">
+                        data-url="{% url 'like_content' image.pk %}">
                   ❤️
                 </button>
                 <span id="like-count-ai-image-{{ image.pk }}">{{ image.likes }}</span>

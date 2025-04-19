@@ -33,7 +33,7 @@ urlpatterns = [
     path('article/<int:pk>-<slug:slug>/reject/', reject_article, name='reject_article'),
 
     # Like content functionality
-    path('<str:content_type>/<int:pk>/like/', like_content, name='like_content'),
+    path('<str:content_type>/<int:pk>/like/', views.like_content, name='like_content'),
 
     # AI Article Creation
     path('create/article/', new_article, name='new_article'),
