@@ -211,4 +211,46 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all fan-related forms
+      const fanForms = document.querySelectorAll('form[action*="fan/"], form[action*="unfan/"]');
+
+      // Add event listeners to each form
+      fanForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault(); // Prevent default form submission
+
+          // Show loading state on button
+          const button = form.querySelector('button');
+          const originalText = button.textContent;
+          button.textContent = "Processing...";
+          button.disabled = true;
+
+          // Submit the form via fetch API
+          fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin'
+          })
+          .then(response => {
+            if (response.ok) {
+              // Reload the page to show updated status
+              window.location.reload();
+            } else {
+              console.error('Form submission failed');
+              button.textContent = originalText;
+              button.disabled = false;
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            button.textContent = originalText;
+            button.disabled = false;
+          });
+        });
+      });
+    });
+    </script>
 {% endblock %}
