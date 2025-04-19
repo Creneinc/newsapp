@@ -34,7 +34,7 @@
         <div class="flex items-center gap-2">
           <button class="like-btn"
                   data-id="{{ image.pk }}"
-                  data-url="{% url 'like_content' image.pk %}">
+                  data-url="{% url 'like_content' 'ai-image' image.pk %}"
               ❤️
           </button>
           <span id="like-count-image-{{ image.pk }}">{{ image.likes }}</span>

@@ -31,7 +31,7 @@
               <span>👁️ {{ video.view_count }} views</span>
               <span class="flex items-center gap-1">
                 <button class="like-btn text-red-500 hover:scale-110 transition"
-                        data-url="{% url 'like_content' video.pk %}"
+                        data-url="{% url 'like_content' 'ai-video' video.pk %}"
                         data-id="{{ video.pk }}"
                         data-type="video">
                   ❤️
