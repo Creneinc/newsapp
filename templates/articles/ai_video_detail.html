@@ -10,10 +10,15 @@
 
   <!-- 👤 Author -->
   <p class="text-sm text-gray-500 mt-2">
-    Generated on {{ video.generated_at|date:"F d, Y" }} by
+    Generated on {{ video.generated_at|date:"F d, Y" }}
+    {% if video.user and video.user.username %}
+    by
     <a href="{% url 'public_profile' video.user.username %}" class="text-emerald-600 hover:underline">
       {{ video.user.username }}
     </a>
+    {% else %}
+    by Anonymous
+    {% endif %}
   </p>
 
   <!-- 🎞 Video -->
@@ -34,7 +39,7 @@
 
   <!-- ❤️ Like -->
   <div class="mt-4 flex items-center gap-2">
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and video.pk %}
     <button class="like-btn text-red-500 hover:scale-110 transition"
             data-id="{{ video.pk }}"
             data-type="ai-video"
@@ -48,7 +53,7 @@
   </div>
 
   <!-- 🗑 Delete Option (for owner) -->
-  {% if user == video.user %}
+  {% if video.pk and user == video.user %}
   <div class="mt-6">
     <button onclick="if(confirm('Are you sure you want to delete this video?')) { document.getElementById('delete-video-form').submit(); }"
             class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
@@ -69,6 +74,7 @@
   <div class="mt-12 bg-gray-50 p-6 rounded-lg shadow-md">
     <h3 class="text-2xl font-bold text-gray-900 mb-4">Leave a Comment</h3>
 
+    {% if user.is_authenticated and video.pk %}
     <form action="{% url 'add_video_comment' video.pk %}" method="POST" class="space-y-4">
       {% csrf_token %}
       <textarea name="content" rows="4" class="w-full p-4 border rounded-md text-gray-700 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Write your comment here..." required></textarea>
@@ -76,15 +82,24 @@
         Post Comment
       </button>
     </form>
+    {% elif not user.is_authenticated %}
+    <div class="mb-6 text-gray-600">
+      <a href="{% url 'login' %}?next={{ request.path }}" class="text-emerald-600 hover:underline">Log in</a> to leave a comment.
+    </div>
+    {% endif %}
 
     <div class="mt-8 space-y-4">
       <h4 class="text-xl font-semibold text-gray-900">Comments</h4>
       {% for comment in comments %}
       <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-500">
         <div class="mb-3">
+          {% if comment.user and comment.user.username %}
           <a href="{% url 'public_profile' comment.user.username %}" class="font-semibold text-gray-800 hover:text-emerald-600">
             {{ comment.user.username }}
           </a>
+          {% else %}
+          <span class="font-semibold text-gray-800">Anonymous</span>
+          {% endif %}
           <p class="text-sm text-gray-500">{{ comment.created_at|date:"F d, Y" }}</p>
         </div>
         <p class="text-gray-600">{{ comment.content }}</p>
