@@ -16,7 +16,39 @@
         <div class="md:col-span-1">
             <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
                 <div class="bg-emerald-600 px-4 py-3">
-                    <h4 class="text-lg font-semibold text-white">{{ user.username }}</h4>
+                    <h4 class="text-lg font-semibold text-white flex items-center justify-between">
+                        {{ user.username }}
+                        {% if request.user != user %}
+                          {% if is_following %}
+                            <form action="{% url 'unfollow_user' user.username %}" method="POST">
+                              {% csrf_token %}
+                              <button class="ml-4 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Unfollow</button>
+                            </form>
+                          {% else %}
+                            <form action="{% url 'follow_user' user.username %}" method="POST">
+                              {% csrf_token %}
+                              <button class="ml-4 px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">Follow</button>
+                            </form>
+                          {% endif %}
+                        {% endif %}
+                      </h4>
+
+                      {% if request.user != user %}
+                      <div class="mt-2">
+                        {% if is_following %}
+                          <form action="{% url 'unfan_user' user.username %}" method="POST" class="inline">
+                            {% csrf_token %}
+                            <button class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">Unfan</button>
+                          </form>
+                        {% else %}
+                          <form action="{% url 'fan_user' user.username %}" method="POST" class="inline">
+                            {% csrf_token %}
+                            <button class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700">Become a Fan</button>
+                          </form>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+
                 </div>
                 <div class="p-4 text-center">
                     {% if user.profile.profile_picture %}
@@ -47,7 +79,7 @@
                 </div>
 
                 <div class="bg-gray-100 px-4 py-3">
-                    <div class="grid grid-cols-3 text-center gap-2">
+                    <div class="grid grid-cols-4 text-center gap-2">
                         <div class="bg-white p-2 rounded-lg shadow-sm">
                             <h5 class="text-lg font-bold text-gray-800">{{ user.profile.total_articles }}</h5>
                             <p class="text-sm text-gray-600">Articles</p>
@@ -60,6 +92,15 @@
                             <h5 class="text-lg font-bold text-gray-800">{{ user.profile.total_videos }}</h5>
                             <p class="text-sm text-gray-600">Videos</p>
                         </div>
+                        <div class="bg-white p-2 rounded-lg shadow-sm">
+                            <h5 class="text-lg font-bold text-gray-800">{{ fan_count|default:0 }}</h5>
+                            <p class="text-sm text-gray-600">Fans</p>
+                        </div>
+                        {% if fan_count > 0 %}
+                        <div class="text-center mt-3">
+                          <a href="{% url 'fan_list' user.username %}" class="text-xs text-emerald-600 hover:underline">View Fans</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

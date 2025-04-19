@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -14,7 +15,7 @@ from django.utils.timezone import now
 from django.views.decorators.http import require_POST
 from django.apps import apps
 from articles.models import get_category_dict
-from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, SiteSettings
+from .models import Article, Comment, AIImage, AIVideo, ImageComment, VideoComment, SiteSettings, Fan
 from .forms import ArticleForm, CommentForm
 from articles.tasks import generate_article_task
 from celery.result import AsyncResult
@@ -744,3 +745,70 @@ def ai_insights_page(request):
         'sort': sort,
         'categories': get_category_dict(),
     })
+
+@login_required
+def fan_user(request, username):
+    target = get_object_or_404(User, username=username)
+    if target != request.user:
+        Fan.objects.get_or_create(fan=request.user, creator=target)
+    return redirect('public_profile', username=username)
+
+@login_required
+def unfan_user(request, username):
+    target = get_object_or_404(User, username=username)
+    Fan.objects.filter(fan=request.user, creator=target).delete()
+    return redirect('public_profile', username=username)
+
+@login_required
+def profile_view(request):
+    user = request.user  # define 'user' here
+    fan_count = Fan.objects.filter(creator=user).count()
+    is_following = False
+
+    # Users can't fan themselves
+    if request.user.is_authenticated and request.user != user:
+        is_following = Fan.objects.filter(fan=request.user, creator=user).exists()
+
+    articles = Article.objects.filter(user=user)
+    images = AIImage.objects.filter(user=user)
+    videos = AIVideo.objects.filter(user=user)
+
+    return render(request, 'profile.html', {
+        'user': user,
+        'articles': articles,
+        'images': images,
+        'videos': videos,
+        'fan_count': fan_count,
+        'is_following': is_following,
+    })
+
+def public_profile_view(request, username):
+    user = get_object_or_404(User, username=username)
+    fan_count = Fan.objects.filter(creator=user).count()
+    is_following = False
+
+    if request.user.is_authenticated and request.user != user:
+        is_following = Fan.objects.filter(fan=request.user, creator=user).exists()
+
+    articles = Article.objects.filter(user=user)
+    images = AIImage.objects.filter(user=user)
+    videos = AIVideo.objects.filter(user=user)
+
+    return render(request, 'public_profile.html', {
+        'user': user,
+        'articles': articles,
+        'images': images,
+        'videos': videos,
+        'fan_count': fan_count,
+        'is_following': is_following,
+    })
+
+@login_required
+def my_fans(request):
+    fans = Fan.objects.filter(creator=request.user).select_related('fan')
+    return render(request, 'users/my_fans.html', {'fans': fans})
+
+@login_required
+def my_following(request):
+    following = Fan.objects.filter(fan=request.user).select_related('creator')
+    return render(request, 'users/my_following.html', {'following': following})

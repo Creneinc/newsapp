@@ -63,6 +63,10 @@ urlpatterns = [
 
     # Search
     path('search/', search_results, name='search_results'),
+
+    # Fans
+    path('fan/<str:username>/', views.fan_user, name='fan'),
+    path('unfan/<str:username>/', views.unfan_user, name='unfan'),
 ]
 
 if settings.DEBUG:
