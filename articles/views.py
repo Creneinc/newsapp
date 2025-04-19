@@ -657,9 +657,9 @@ def reject_article(request, pk):
     messages.success(request, f"Article '{article.title}' has been rejected.")
     return redirect('article_detail', pk=pk)
 
-@csrf_exempt
-@require_POST
 @login_required
+@require_POST
+@csrf_exempt
 def like_content(request, content_type, pk):
     model_map = {
         'article': 'Article',
@@ -671,16 +671,23 @@ def like_content(request, content_type, pk):
         return JsonResponse({'status': 'error', 'message': 'Invalid content type'}, status=400)
 
     model = apps.get_model('articles', model_map[content_type])
-    session_key = f"liked_{content_type}_{pk}"
-    last_like_key = f"last_like_time_{content_type}_{pk}"
+
+    # Replace hyphens with underscores for session keys
+    safe_content_type = content_type.replace('-', '_')
+    session_key = f"liked_{safe_content_type}_{pk}"
+    last_like_key = f"last_like_time_{safe_content_type}_{pk}"
 
     # Prevent rapid re-likes
     last_like = request.session.get(last_like_key)
     if last_like:
-        current_time = now()
-        last_like_time = timezone.datetime.fromisoformat(last_like)
-        if current_time - last_like_time < timedelta(seconds=10):
-            return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
+        try:
+            current_time = now()
+            last_like_time = timezone.datetime.fromisoformat(last_like)
+            if current_time - last_like_time < timedelta(seconds=10):
+                return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
+        except (ValueError, TypeError) as e:
+            # Handle potential formatting issues with the stored datetime
+            pass  # Continue as if no previous like time was stored
 
     if request.session.get(session_key):
         return JsonResponse({'status': 'error', 'message': 'Already liked.'}, status=403)
@@ -698,3 +705,5 @@ def like_content(request, content_type, pk):
         return JsonResponse({'status': 'success', 'likes': obj.likes})
     except model.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Content not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Unexpected error: {str(e)}'}, status=500)
