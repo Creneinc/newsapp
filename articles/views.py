@@ -746,6 +746,7 @@ def ai_insights_page(request):
         'categories': get_category_dict(),
     })
 
+@require_POST
 @login_required
 def fan_user(request, username):
     target = get_object_or_404(User, username=username)
@@ -753,6 +754,7 @@ def fan_user(request, username):
         Fan.objects.get_or_create(fan=request.user, creator=target)
     return redirect('public_profile', username=username)
 
+@require_POST
 @login_required
 def unfan_user(request, username):
     target = get_object_or_404(User, username=username)
