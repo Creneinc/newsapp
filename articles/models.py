@@ -11,6 +11,7 @@ class Article(models.Model):
         ("Politics", "Politics"),
         ("Sports", "Sports"),
         ("Entertainment", "Entertainment"),
+        ('AI Insights', 'AI Insights'),
         # To be added in the future
         # ('news', 'News'),
         # ('tech', 'Technology'),

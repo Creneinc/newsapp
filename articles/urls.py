@@ -54,6 +54,9 @@ urlpatterns = [
     path('ai-videos/delete/<int:pk>/', delete_ai_video, name='delete_ai_video'),
     path('ai-videos/<int:pk>-<slug:slug>/comment/', add_video_comment, name='add_video_comment'),
 
+    # AI Insights
+    path('ai-insights/', views.ai_insights_page, name='ai_insights_page'),
+
     # Uploads
     path('create/image/', upload_image, name='upload_image'),
     path('create/video/', upload_video, name='upload_video'),

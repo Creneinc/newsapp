@@ -724,3 +724,23 @@ def like_content(request, content_type, pk):
         return JsonResponse({'status': 'error', 'message': 'Content not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Unexpected error: {str(e)}'}, status=500)
+
+def ai_insights_page(request):
+    sort = request.GET.get("sort", "newest")
+    articles = Article.objects.filter(category="AI Insights", moderation_status="approved")
+
+    if sort == "liked":
+        articles = articles.order_by("-likes", "-created_at")
+    else:
+        articles = articles.order_by("-created_at")
+
+    paginator = Paginator(articles, 5)  # 5 articles per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'articles/ai_insights.html', {
+        'page_obj': page_obj,
+        'insights': page_obj.object_list,
+        'sort': sort,
+        'categories': get_category_dict(),
+    })

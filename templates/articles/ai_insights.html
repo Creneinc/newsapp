@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Insights – Crene{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-10 space-y-16">
+  <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">🧠 AI Insights</h1>
+
+  <!-- Sort Dropdown -->
+  <div class="flex justify-end mb-6">
+    <form method="get">
+      <label for="sort" class="text-sm text-gray-600 mr-2">Sort by:</label>
+      <select name="sort" id="sort" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+        <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+        <option value="liked" {% if sort == "liked" %}selected{% endif %}>Most Liked</option>
+      </select>
+    </form>
+  </div>
+
+  {% if insights %}
+    {% for article in insights %}
+      <article class="bg-white rounded-xl p-6 shadow-md">
+        <h2 class="text-2xl font-bold text-gray-900 leading-snug">{{ article.title }}</h2>
+
+        <p class="text-sm text-gray-500 mt-1">
+          Published on {{ article.created_at|date:"F d, Y" }} by
+          <a href="{% url 'public_profile' article.user.username %}" class="text-emerald-600 hover:underline">
+            {{ article.user.username }}
+          </a>
+        </p>
+
+        {% if article.image %}
+        <img src="{{ article.image.url }}" class="w-full mt-4 rounded-lg shadow-sm" alt="{{ article.title }}">
+        {% endif %}
+
+        <div class="prose prose-lg mt-6 text-gray-800 max-w-none">
+          {{ article.body|linebreaks }}
+        </div>
+
+        <div class="mt-4 flex items-center gap-4 text-sm text-gray-500">
+          <div class="flex items-center gap-1"> 👁️ {{ article.view_count }}</div>
+          <div class="flex items-center gap-1">
+            {% if user.is_authenticated %}
+              <button class="like-btn {% if request.session.liked_article_{{ article.pk }} %}liked{% endif %} text-red-500 hover:scale-110 transition"
+                      data-id="{{ article.pk }}"
+                      data-type="article"
+                      data-url="{% url 'like_content' 'article' article.pk %}">
+                ❤️
+              </button>
+              <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
+            {% else %}
+              ❤️ {{ article.likes }}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Comment Form -->
+        <div class="mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
+          <h4 class="text-lg font-bold mb-2">Leave a Comment</h4>
+          {% if user.is_authenticated %}
+          <form action="{% url 'add_comment' article.pk article.title|slugify %}" method="POST" class="space-y-2">
+            {% csrf_token %}
+            <textarea name="content" rows="3" class="w-full p-2 border rounded" placeholder="Write your comment..."></textarea>
+            <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition">Post</button>
+          </form>
+          {% else %}
+            <p class="text-sm text-gray-600">You must <a href="{% url 'login' %}?next={{ request.path }}" class="text-emerald-600 underline">log in</a> to comment.</p>
+          {% endif %}
+        </div>
+
+        <!-- Display Comments -->
+        <div class="mt-4 space-y-2">
+          {% for comment in article.comments.all %}
+          <div class="bg-white border-l-4 border-emerald-500 p-3 rounded shadow-sm">
+            <div class="text-sm text-gray-800 font-semibold">
+              <a href="{% url 'public_profile' comment.user.username %}" class="hover:text-emerald-600">{{ comment.user.username }}</a>
+              <span class="text-xs text-gray-500 ml-2">{{ comment.created_at|date:"F d, Y" }}</span>
+            </div>
+            <p class="text-gray-600 mt-1">{{ comment.content }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+
+    <!-- Pagination Controls -->
+    <div class="flex justify-center mt-12">
+      <div class="inline-flex items-center space-x-1">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&sort={{ sort }}" class="px-3 py-1 bg-gray-200 text-sm rounded hover:bg-gray-300">&larr; Previous</a>
+        {% endif %}
+
+        <span class="px-4 py-1 text-sm text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&sort={{ sort }}" class="px-3 py-1 bg-gray-200 text-sm rounded hover:bg-gray-300">Next &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <p class="text-gray-500 text-center">No AI Insight articles yet. Check back soon!</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const likeButtons = document.querySelectorAll(".like-btn");
+
+    likeButtons.forEach(button => {
+      button.addEventListener("click", function () {
+        const id = this.dataset.id;
+        const url = this.dataset.url;
+        const contentType = this.dataset.type;
+        const countElement = document.getElementById(`like-count-${contentType}-${id}`);
+
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            countElement.textContent = data.likes;
+            this.classList.add('liked');
+            this.disabled = true;
+          } else {
+            alert(data.message || 'Error liking content');
+          }
+        })
+        .catch(error => {
+          console.error("Like error:", error);
+        });
+      });
+    });
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  });
+</script>
+{% endblock %}
