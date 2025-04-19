@@ -749,23 +749,29 @@ def ai_insights_page(request):
 @require_POST
 @login_required
 def fan_user(request, username):
-    target = get_object_or_404(User, username=username)
-    if target != request.user:
+    try:
+        target = get_object_or_404(User, username=username)
+
+        # Don't allow users to fan themselves
+        if target == request.user:
+            messages.warning(request, "You cannot become a fan of yourself.")
+            return redirect('public_profile', username=username)
+
         # Check if relationship already exists
-        existing = Fan.objects.filter(fan=request.user, creator=target).exists()
-
-        if not existing:
-            # Only create the relationship if it doesn't exist
-            fan = Fan.objects.create(fan=request.user, creator=target)
-            messages.success(request, f"You are now a fan of {username}!")
+        if Fan.objects.filter(fan=request.user, creator=target).exists():
+            messages.info(request, f"You are already a fan of {username}.")
         else:
-            messages.info(request, "You're already a fan of this user!")
-    else:
-        messages.warning(request, "You cannot become a fan of yourself!")
+            # Create a new fan relationship
+            Fan.objects.create(fan=request.user, creator=target)
+            messages.success(request, f"You are now a fan of {username}!")
 
-    # Use Django's built-in reverse function for the redirect
-    from django.urls import reverse
-    return redirect(reverse('public_profile', kwargs={'username': username}))
+    except Exception as e:
+        # Log the error and show a message to the user
+        print(f"ERROR in fan_user: {str(e)}")
+        messages.error(request, "Something went wrong. Please try again.")
+
+    # Redirect back to the profile page
+    return redirect('public_profile', username=username)
 
 @require_POST
 @login_required
