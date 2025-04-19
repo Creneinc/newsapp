@@ -6,153 +6,118 @@
   {% if videos %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for video in videos %}
-      <div class="relative group">
+      <div class="relative">
         <div class="bg-white shadow-sm hover:shadow-lg transition rounded-xl overflow-hidden">
           <a href="{% url 'ai_video_detail' video.pk video.title|slugify %}">
-            <div class="relative video-thumbnail-container" data-video-url="{{ video.video.url }}">
-              <canvas class="w-full h-48 object-cover bg-gray-100"></canvas>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <div class="bg-black bg-opacity-30 rounded-full p-3">
-                  <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+            <video class="w-full h-48 object-cover bg-gray-100" muted preload="metadata">
+              <source src="{{ video.video.url }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
           </a>
 
           <div class="p-4">
-            <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ video.title|default:"Untitled AI Video" }}</h2>
+            <h2 class="text-md font-semibold text-gray-800 mb-1 truncate">{{ video.title }}</h2>
             {% if video.prompt_used %}
               <p class="text-sm text-gray-600 line-clamp-2">{{ video.prompt_used }}</p>
             {% endif %}
 
-            <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
-              <span>👁️ {{ video.view_count }} views</span>
-              <span class="flex items-center gap-1">
-                <button class="like-btn text-red-500 hover:scale-110 transition"
-                        data-url="{% url 'like_content' 'ai-video' video.pk %}"
-                        data-id="{{ video.pk }}"
-                        data-type="video">
-                  ❤️
-                </button>
-                <span id="like-count-video-{{ video.pk }}">{{ video.likes }}</span>
-              </span>
-            </div>
-
-            <div class="flex justify-between items-center mt-1">
+            <div class="flex justify-between items-center mt-2">
               <span class="text-xs text-gray-500">{{ video.generated_at|date:"M d, Y" }}</span>
               <a href="{% url 'public_profile' video.user.username %}" class="text-xs text-emerald-600 hover:underline">
                 By {{ video.user.username }}
               </a>
             </div>
+
+            <!-- 👁️ View Count & ❤️ Like Count -->
+            <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+              <div>👁️ {{ video.view_count }} views</div>
+              <div class="flex items-center gap-1">
+                <button class="like-btn text-red-500 hover:scale-110 transition"
+                        data-id="{{ video.pk }}"
+                        data-type="ai-video"
+                        data-url="{% url 'like_content' 'ai-video' video.pk %}">
+                  ❤️
+                </button>
+                <span id="like-count-ai-video-{{ video.pk }}">{{ video.likes }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {% if video.user == user %}
-          <form action="{% url 'delete_ai_video' video.pk %}" method="post" class="absolute top-0 right-0 m-2">
-            {% csrf_token %}
-            <button type="submit" class="px-1 py-0.5 bg-red-600 text-white rounded-full hover:bg-red-700">
-              🗑
-            </button>
-          </form>
+        <form action="{% url 'delete_ai_video' video.pk %}" method="post" class="absolute top-0 right-0 m-2">
+          {% csrf_token %}
+          <button type="submit" class="px-1 py-0.5 bg-red-600 text-white rounded-full hover:bg-red-700">
+            🖑
+          </button>
+        </form>
         {% endif %}
       </div>
       {% endfor %}
     </div>
 
     {% if page_obj.has_other_pages %}
-      <div class="mt-8 flex justify-center space-x-2">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
-        {% endif %}
-        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
-        {% endif %}
-      </div>
+    <div class="mt-8 flex justify-center space-x-2">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">← Prev</a>
+      {% endif %}
+      <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next →</a>
+      {% endif %}
+    </div>
     {% endif %}
   {% else %}
     <div class="text-center text-gray-500 text-lg mt-10">
-      <p>No AI videos uploaded yet. Be the first to share something cinematic!</p>
+      <p>No AI videos uploaded yet. Be the first to share something amazing!</p>
     </div>
   {% endif %}
 </div>
 
-<!-- 🔧 Script: Thumbnails & Likes -->
+<!-- ❤️ Like AJAX Script -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // 🖼️ Generate thumbnail from video
-  document.querySelectorAll('.video-thumbnail-container').forEach(container => {
-    const videoUrl = container.dataset.videoUrl;
-    const canvas = container.querySelector('canvas');
-    const context = canvas.getContext('2d');
-    const video = document.createElement('video');
-    canvas.width = 320;
-    canvas.height = 180;
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.like-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const id = button.dataset.id;
+        const url = button.dataset.url;
 
-    video.src = videoUrl + '#t=1.0';
-    video.crossOrigin = 'anonymous';
-    video.addEventListener('loadeddata', () => video.currentTime = 1);
-    video.addEventListener('seeked', () => {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      video.pause(); video.removeAttribute('src'); video.load();
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            document.getElementById(`like-count-ai-video-${id}`).textContent = data.likes;
+            button.disabled = true;
+            button.textContent = '❤️ Liked';
+          } else {
+            alert(data.message || 'Already liked or error occurred.');
+          }
+        })
+        .catch(() => alert('Failed to send like.'));
+      });
     });
-    video.addEventListener('error', () => {
-      const grad = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      grad.addColorStop(0, '#10b981');
-      grad.addColorStop(1, '#047857');
-      context.fillStyle = grad;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = 'white';
-      context.textAlign = 'center';
-      context.font = '24px Arial';
-      context.fillText('AI Video', canvas.width / 2, canvas.height / 2);
-    });
-  });
 
-  // ❤️ Like functionality
-  document.querySelectorAll('.like-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      const id = button.dataset.id;
-      const url = button.dataset.url;
-
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken'),
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          document.getElementById(`like-count-video-${id}`).textContent = data.likes;
-          button.disabled = true;
-          button.textContent = '❤️ Liked';
-        } else {
-          alert(data.message || 'Already liked or error occurred.');
-        }
-      })
-      .catch(err => console.error('Like error:', err));
-    });
-  });
-
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
         }
       }
+      return cookieValue;
     }
-    return cookieValue;
-  }
-});
+  });
 </script>
 
 {% endblock %}
