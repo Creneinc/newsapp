@@ -68,7 +68,9 @@
                             <h5 class="text-xl font-semibold text-gray-900">
                                 {{ fan_count|default:"0" }}
                             </h5>
-                            <p class="text-sm text-gray-500">Fans</p>
+                            <p class="text-sm text-gray-500">
+                                {% if request.user == profile_user %}Your{% else %}Their{% endif %} Fans
+                            </p>
                         </div>
                     </div>
 
