@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Following | Crene{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <!-- Toggle Tabs -->
+  <div class="flex space-x-4 mb-6">
+    <a href="{% url 'my_fans' %}" class="px-4 py-2 rounded-md text-sm font-medium {% if request.path == '/fans/' %}bg-emerald-600 text-white{% else %}bg-gray-200 text-gray-800 hover:bg-gray-300{% endif %}">Fans</a>
+    <a href="{% url 'my_following' %}" class="px-4 py-2 rounded-md text-sm font-medium {% if request.path == '/following/' %}bg-emerald-600 text-white{% else %}bg-gray-200 text-gray-800 hover:bg-gray-300{% endif %}">Following</a>
+  </div>
+
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">You Are Following</h2>
+
+  {% if following %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for relation in following %}
+        <div class="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            {% if relation.creator.profile.profile_picture %}
+              <img src="{{ relation.creator.profile.profile_picture.url }}" class="w-12 h-12 rounded-full object-cover" alt="{{ relation.creator.username }}">
+            {% else %}
+              <img src="{% static 'images/default_profile.png' %}" class="w-12 h-12 rounded-full object-cover" alt="{{ relation.creator.username }}">
+            {% endif %}
+            <div>
+              <a href="{% url 'public_profile' relation.creator.username %}" class="text-gray-900 font-medium hover:underline">
+                {{ relation.creator.username }}
+              </a>
+              <p class="text-xs text-gray-500">Fanned {{ relation.created_at|timesince }} ago</p>
+            </div>
+          </div>
+
+          <!-- Optional Unfan Button -->
+          <form action="{% url 'unfan_user' relation.creator.username %}" method="POST">
+            {% csrf_token %}
+            <button class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Unfan</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500">You're not following anyone yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
