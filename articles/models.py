@@ -164,12 +164,12 @@ class SiteSettings(models.Model):
         verbose_name_plural = "Site Settings"
 
 class Fan(models.Model):
-    fan = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
-    creator = models.ForeignKey(User, related_name='fans', on_delete=models.CASCADE)
+    fan = models.ForeignKey(User, on_delete=models.CASCADE, related_name="following")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fans")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('fan', 'creator')  # Prevent duplicate fan relationships
+        unique_together = ('fan', 'creator')
 
     def __str__(self):
-        return f"{self.fan.username} is a fan of {self.creator.username}"
+        return f"{self.fan.username} → {self.creator.username}"

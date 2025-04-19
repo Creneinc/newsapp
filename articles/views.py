@@ -783,25 +783,26 @@ def profile_view(request):
     })
 
 def public_profile_view(request, username):
-    user = get_object_or_404(User, username=username)
-    fan_count = Fan.objects.filter(creator=user).count()
+    profile_user = get_object_or_404(User, username=username)
+    fan_count = Fan.objects.filter(creator=profile_user).count()
     is_following = False
 
-    if request.user.is_authenticated and request.user != user:
-        is_following = Fan.objects.filter(fan=request.user, creator=user).exists()
+    if request.user.is_authenticated and request.user != profile_user:
+        is_following = Fan.objects.filter(fan=request.user, creator=profile_user).exists()
 
-    articles = Article.objects.filter(user=user)
-    images = AIImage.objects.filter(user=user)
-    videos = AIVideo.objects.filter(user=user)
+    articles = Article.objects.filter(user=profile_user)
+    images = AIImage.objects.filter(user=profile_user)
+    videos = AIVideo.objects.filter(user=profile_user)
 
     return render(request, 'public_profile.html', {
-        'user': user,
+        'profile_user': profile_user,
         'articles': articles,
         'images': images,
         'videos': videos,
         'fan_count': fan_count,
         'is_following': is_following,
     })
+
 
 @login_required
 def my_fans(request):

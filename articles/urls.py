@@ -65,9 +65,11 @@ urlpatterns = [
     path('search/', search_results, name='search_results'),
 
     # Fans
-    path("profile/<str:username>/", views.public_profile_view, name="public_profile"),
     path("fan/<str:username>/", views.fan_user, name="fan_user"),
     path("unfan/<str:username>/", views.unfan_user, name="unfan_user"),
+    path("users/user/<str:username>/", views.public_profile_view, name="public_profile"),
+    path("fans/", views.my_fans, name="my_fans"),
+    path("following/", views.my_following, name="my_following"),
 ]
 
 if settings.DEBUG:
