@@ -492,6 +492,10 @@ def ai_image_gallery(request):
 # 🎞 AI Video Gallery
 def ai_video_gallery(request):
     ai_videos = AIVideo.objects.select_related('user').order_by('-generated_at')
+
+    # Filter out videos without valid users or usernames
+    ai_videos = [video for video in ai_videos if video.user and video.user.username]
+
     return render(request, 'articles/ai_video_gallery.html', {
         'videos': ai_videos,
         'categories': CATEGORIES,
