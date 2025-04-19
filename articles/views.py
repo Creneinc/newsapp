@@ -749,17 +749,23 @@ def ai_insights_page(request):
 @require_POST
 @login_required
 def fan_user(request, username):
-    print(f"DEBUG: fan_user called with username={username}")
-    print(f"DEBUG: Current user: {request.user.username}")
-
     target = get_object_or_404(User, username=username)
-    print(f"DEBUG: Target user found: {target.username}")
-
     if target != request.user:
-        fan, created = Fan.objects.get_or_create(fan=request.user, creator=target)
-        print(f"DEBUG: Fan created: {fan}, New: {created}")
+        # Add more detailed logging
+        print(f"DEBUG: Before fan creation - fan={request.user.username}, creator={target.username}")
+
+        # Check if relationship already exists
+        existing = Fan.objects.filter(fan=request.user, creator=target).exists()
+        print(f"DEBUG: Relationship already exists? {existing}")
+
+        # Try creating the relationship
+        try:
+            fan, created = Fan.objects.get_or_create(fan=request.user, creator=target)
+            print(f"DEBUG: Fan object created: {created}, fan_id={fan.id}")
+        except Exception as e:
+            print(f"ERROR creating fan: {str(e)}")
     else:
-        print(f"DEBUG: Tried to fan self: {target.username}")
+        print(f"DEBUG: User tried to fan themselves: {request.user.username}")
 
     return redirect('public_profile', username=username)
 
