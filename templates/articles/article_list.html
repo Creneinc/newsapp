@@ -31,7 +31,7 @@
                         <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
                             <span>👁️ {{ article.view_count }} views</span>
                             <span class="flex items-center gap-1">
-                                <button class="like-article-btn text-red-500 hover:scale-110 transition" data-id="{{ article.pk }}">
+                                <button class="like-article-btn text-red-500 hover:scale-110 transition" data-url="{% url 'like_article' article.pk %}" data-id="{{ article.pk }}">
                                     ❤️
                                 </button>
                                 <span id="like-count-{{ article.pk }}">{{ article.likes }}</span>
@@ -488,47 +488,49 @@
     </script>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".like-article-btn").forEach(button => {
-          button.addEventListener("click", function () {
-            const articleId = this.dataset.id;
-            fetch(`/articles/${articleId}/like/`, {
-              method: "POST",
-              headers: {
-                "X-CSRFToken": getCookie("csrftoken"),
-                "Content-Type": "application/json"
-              }
-            })
-            .then(res => res.json())
-            .then(data => {
-              if (data.status === "success") {
-                const countEl = document.getElementById(`like-count-${articleId}`);
-                countEl.textContent = data.likes;
-                button.disabled = true;
-                button.innerHTML = "❤️ Liked";
-              } else {
-                alert(data.message || "Failed to like the article.");
-              }
-            })
-            .catch(err => console.error("Like error:", err));
-          });
-        });
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".like-article-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const articleId = button.dataset.id;
+                    const url = button.dataset.url;
 
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let cookie of cookies) {
-              cookie = cookie.trim();
-              if (cookie.startsWith(name + "=")) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-              }
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": getCookie("csrftoken"),
+                            "Content-Type": "application/json"
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            const countEl = document.getElementById(`like-count-${articleId}`);
+                            countEl.textContent = data.likes;
+                            button.disabled = true;
+                            button.innerHTML = "❤️ Liked";
+                        } else {
+                            alert(data.message || "Failed to like the article.");
+                        }
+                    })
+                    .catch(err => console.error("Like error:", err));
+                });
+            });
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== "") {
+                    const cookies = document.cookie.split(";");
+                    for (let cookie of cookies) {
+                        cookie = cookie.trim();
+                        if (cookie.startsWith(name + "=")) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
             }
-          }
-          return cookieValue;
-        }
-      });
+        });
     </script>
 
     <script>

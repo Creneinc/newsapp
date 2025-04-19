@@ -36,7 +36,8 @@
     <div class="mt-4 flex items-center gap-2">
         <button class="like-btn text-red-500 hover:scale-110 transition"
                 data-id="{{ article.pk }}"
-                data-type="article">
+                data-type="article"
+                data-url="{% url 'like_article' article.pk %}">
             ❤️
         </button>
         <span id="like-count-article-{{ article.pk }}">{{ article.likes }}</span>
@@ -96,63 +97,77 @@
 
 {% block scripts %}
 <script>
-    function checkArticleGenerationStatus() {
-        const articleId = {{ article.id }};
-        fetch(`/check_article_status/${articleId}/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'completed') {
-                    document.getElementById('article-body').innerHTML = data.body;
-                    document.getElementById('loading-message').innerHTML = '';
+    document.addEventListener("DOMContentLoaded", function () {
+        // ✅ Utility: Get CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // ✅ Utility: Generic Fetch Wrapper for JSON
+        async function fetchWithJson(url, method = "GET", body = null) {
+            const options = {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                credentials: "same-origin"
+            };
+            if (body) options.body = JSON.stringify(body);
+            const response = await fetch(url, options);
+            return response.json();
+        }
+
+        // ✅ Article Like Handler
+        document.querySelectorAll(".like-article-btn").forEach(button => {
+            button.addEventListener("click", async function () {
+                const articleId = this.dataset.id;
+                const url = this.dataset.url;
+
+                try {
+                    const data = await fetchWithJson(url, "POST");
+                    if (data.status === "success") {
+                        document.getElementById(`like-count-${articleId}`).textContent = data.likes;
+                        button.disabled = true;
+                        button.textContent = "❤️ Liked";
+                    } else {
+                        alert(data.message || "Failed to like the article.");
+                    }
+                } catch (err) {
+                    console.error("Like error:", err);
+                }
+            });
+        });
+
+        // ✅ Article Generation Status Checker
+        {% if article.body == "⏳ Generating article..." %}
+        async function checkArticleGenerationStatus() {
+            try {
+                const data = await fetchWithJson(`/check_article_status/{{ article.id }}/`);
+                if (data.status === "completed") {
+                    document.getElementById("article-body").innerHTML = data.body;
+                    document.getElementById("loading-message").innerHTML = '';
                 } else {
                     setTimeout(checkArticleGenerationStatus, 3000);
                 }
-            })
-            .catch(error => console.error('Error checking article status:', error));
-    }
-
-    {% if article.body == "⏳ Generating article..." %}
-        checkArticleGenerationStatus();
-    {% endif %}
-
-    // Like Button Functionality
-    document.querySelectorAll('.like-btn').forEach(button => {
-        button.addEventListener('click', function () {
-            const articleId = this.dataset.id;
-
-            fetch(`/articles/${articleId}/like/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    const likeCount = document.getElementById(`like-count-article-${articleId}`);
-                    likeCount.textContent = data.likes;
-                    button.disabled = true;
-                    button.textContent = '❤️ Liked';
-                }
-            })
-            .catch(error => console.error("Like error:", error));
-        });
-    });
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let cookie of cookies) {
-                cookie = cookie.trim();
-                if (cookie.startsWith(name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+            } catch (error) {
+                console.error("Error checking article status:", error);
             }
         }
-        return cookieValue;
-    }
-</script>
+
+        checkArticleGenerationStatus();
+        {% endif %}
+    });
+    </script>
 {% endblock %}
