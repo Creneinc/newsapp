@@ -102,6 +102,31 @@
                         </div>
                         {% endif %}
                     </div>
+                    {% if following %}
+                    <div class="mt-4">
+                        <h5 class="text-md font-semibold text-gray-800 mb-2">You're Following</h5>
+                        <ul class="space-y-1">
+                            {% for entry in following %}
+                                <li class="flex items-center justify-between text-sm bg-white p-2 rounded shadow-sm">
+                                    <div class="flex items-center gap-2">
+                                        {% if entry.creator.profile.profile_picture %}
+                                            <img src="{{ entry.creator.profile.profile_picture.url }}" class="w-6 h-6 rounded-full object-cover" alt="{{ entry.creator.username }}">
+                                        {% else %}
+                                            <img src="{% static 'images/default_profile.png' %}" class="w-6 h-6 rounded-full object-cover" alt="{{ entry.creator.username }}">
+                                        {% endif %}
+                                        <a href="{% url 'public_profile' entry.creator.username %}" class="text-emerald-700 hover:underline">
+                                            {{ entry.creator.username }}
+                                        </a>
+                                    </div>
+                                    <form action="{% url 'unfan_user' entry.creator.username %}" method="POST">
+                                        {% csrf_token %}
+                                        <button class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">Unfan</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
                 </div>
             </div>
 

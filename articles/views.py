@@ -771,20 +771,23 @@ def profile_view(request):
     articles = Article.objects.filter(user=user)
     images = AIImage.objects.filter(user=user)
     videos = AIVideo.objects.filter(user=user)
+    following = Fan.objects.filter(fan=user).select_related('creator')
 
-    return render(request, 'users/profile.html', {
+    return render(request, 'profile.html', {
         'user': user,
         'articles': articles,
         'images': images,
         'videos': videos,
         'fan_count': fan_count,
         'is_following': is_following,
+        'following': following,
     })
 
 def public_profile_view(request, username):
     profile_user = get_object_or_404(User, username=username)
     fan_count = Fan.objects.filter(creator=profile_user).count()
     is_following = False
+    following = Fan.objects.filter(fan=profile_user).select_related('creator')
 
     if request.user.is_authenticated and request.user != profile_user:
         is_following = Fan.objects.filter(fan=request.user, creator=profile_user).exists()
@@ -800,6 +803,7 @@ def public_profile_view(request, username):
         'videos': videos,
         'fan_count': fan_count,
         'is_following': is_following,
+        'following': following,
     })
 
 @login_required
