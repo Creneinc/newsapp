@@ -761,11 +761,10 @@ def unfan_user(request, username):
 
 @login_required
 def profile_view(request):
-    user = request.user  # define 'user' here
+    user = request.user
     fan_count = Fan.objects.filter(creator=user).count()
     is_following = False
 
-    # Users can't fan themselves
     if request.user.is_authenticated and request.user != user:
         is_following = Fan.objects.filter(fan=request.user, creator=user).exists()
 
@@ -773,7 +772,7 @@ def profile_view(request):
     images = AIImage.objects.filter(user=user)
     videos = AIVideo.objects.filter(user=user)
 
-    return render(request, 'profile.html', {
+    return render(request, 'users/profile.html', {
         'user': user,
         'articles': articles,
         'images': images,
@@ -794,7 +793,7 @@ def public_profile_view(request, username):
     images = AIImage.objects.filter(user=profile_user)
     videos = AIVideo.objects.filter(user=profile_user)
 
-    return render(request, 'public_profile.html', {
+    return render(request, 'users/public_profile.html', {
         'profile_user': profile_user,
         'articles': articles,
         'images': images,
@@ -802,7 +801,6 @@ def public_profile_view(request, username):
         'fan_count': fan_count,
         'is_following': is_following,
     })
-
 
 @login_required
 def my_fans(request):
