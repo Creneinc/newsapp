@@ -653,6 +653,8 @@ def reject_article(request, pk):
     messages.success(request, f"Article '{article.title}' has been rejected.")
     return redirect('article_detail', pk=pk)
 
+@csrf_exempt
+@require_POST
 @login_required
 def like_content(request, content_type, pk):
     model_map = {
@@ -671,7 +673,9 @@ def like_content(request, content_type, pk):
     # Prevent rapid re-likes
     last_like = request.session.get(last_like_key)
     if last_like:
-        if last_like > str(now() - timedelta(seconds=10)):
+        current_time = now()
+        last_like_time = timezone.datetime.fromisoformat(last_like)
+        if current_time - last_like_time < timedelta(seconds=10):
             return JsonResponse({'status': 'error', 'message': 'Please wait before liking again.'}, status=429)
 
     if request.session.get(session_key):
@@ -683,7 +687,9 @@ def like_content(request, content_type, pk):
         obj.save(update_fields=["likes"])
 
         request.session[session_key] = True
-        request.session[last_like_key] = str(now())
+        request.session[last_like_key] = now().isoformat()
+        # Ensure session is saved
+        request.session.modified = True
 
         return JsonResponse({'status': 'success', 'likes': obj.likes})
     except model.DoesNotExist:
